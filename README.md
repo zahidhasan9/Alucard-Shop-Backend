@@ -36,3 +36,4 @@ https://github.com/ajaybor0/MERN-eCommerce
 mongo atlas
 user:rimel
 pass:rimel
+mongodb+srv://rimel:rimel@e-com.l9qfxkv.mongodb.net/?retryWrites=true&w=majority&appName=E-com"

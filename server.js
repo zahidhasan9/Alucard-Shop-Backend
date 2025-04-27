@@ -57,7 +57,7 @@ app.use(cors({
 
 // Routes
 // app.use('/api/auth', authRoutes);
-app.use('/api/user', UserRoutes);
+app.use('/api/auth', UserRoutes);
 
 // Error Handling Middleware
 // app.use(errorHandler);

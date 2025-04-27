@@ -12,17 +12,11 @@ export const generateHashPassword = async (password) => {
 };
 
 ///verifyHashPassword
-export const verifyPassword = async (
-  currentPassword,
-  storedPassword
-  
-) => {
-  const isPasswordMatched = await bcrypt.compare(
-    currentPassword,
-    storedPassword
-  );
+export const verifyPassword = async (currentPassword, storedPassword) => {
+  const isPasswordMatched = await bcrypt.compare(currentPassword, storedPassword);
   return isPasswordMatched;
 };
+
 //email verify
 export const verifyEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

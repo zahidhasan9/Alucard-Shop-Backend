@@ -28,8 +28,9 @@ import transporter from '../utils/emailsender.js';
             if (existingUser) {
                 return res.status(400).json({ message: 'User already exists' });
             }
-            // const hashedPassword = await bcrypt.hash(password, 10);
-            const hashedPassword = await generateHashPassword(password);
+            const hashedPassword = await bcrypt.hash(password, 10);
+            // const hashedPassword = await generateHashPassword(password);
+            
             const newUser = new User({
                  firstName, 
                  lastName, 
@@ -62,8 +63,9 @@ import transporter from '../utils/emailsender.js';
                 return res.status(404).json({ message: 'Invalid email address. Please check your email and try again.' });
             }
     
-            // const match = await bcrypt.compare(password, user.password || '');
-            const match=verifyPassword(password,user.password)
+            // const match = await bcrypt.compare(password, user.password |"");
+            const match= await verifyPassword(password,user.password)
+            console.log(match)
     
             if (!match) {
                 return res.status(401).json({ message: 'Invalid password. Please check your password and try again.' });
@@ -114,6 +116,10 @@ import transporter from '../utils/emailsender.js';
 // **🔹 Logout API**
 // app.post("/api/auth/logout", 
     const logoutUser=(req, res) => {
+      const { token } = req.cookies;
+      if(!token){
+        res.json({ message: "tocken empty"});
+      }
     res.cookie("token", "", { httpOnly: true, expires: new Date(0) });
     res.json({ message: "Logged out successfully!" });
 };
