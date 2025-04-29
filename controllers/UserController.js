@@ -103,7 +103,6 @@ import transporter from '../utils/emailsender.js';
     if (!token) return res.status(401).json({ message: "Not Authenticated" });
     // console.log("Cookies Received:", token); // ✅ Cookies Check
     try {
-        // imprt jwt
         // const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const decoded= await verifyToken(token)
         console.log(decoded,'decode')
@@ -311,8 +310,9 @@ const resetPasswordRequest = async (req, res, next) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: '15m'
     });
-    const passwordResetLink = `https://mern-shop-abxs.onrender.com/reset-password/${user._id}/${token}`;
-    console.log(passwordResetLink);
+    const passwordResetLink = `http://localhost:5000/api/auth/reset-password/${user._id}/${token}`;
+    // console.log(passwordResetLink);
+    // res.json({token:passwordResetLink})
     await transporter.sendMail({
       from: `"MERN Shop" ${process.env.EMAIL_FROM}`, // sender address
       to: user.email, // list of receivers
