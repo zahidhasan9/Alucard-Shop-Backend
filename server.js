@@ -47,7 +47,7 @@ app.use(passport.initialize());
 app.use(compression());
 
 app.use(cors({
-    origin: "http://localhost:3000", // তোমার Frontend URL
+    origin: "http://localhost:5173", // তোমার Frontend URL
     credentials: true , // Cookies & Session Allow করার জন্য
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag']
   }));
