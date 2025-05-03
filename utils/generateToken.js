@@ -5,8 +5,10 @@ if (!jwtSecret) {
   throw new Error('JWT_SECRET is not defined in environment variables');
 }
 
+// export const generateToken = (userInfo, expiresIn = '1h') => 
+//   jwt.sign({ userInfo }, jwtSecret, { expiresIn });
 export const generateToken = (userInfo, expiresIn = '1h') => 
-  jwt.sign({ userInfo }, jwtSecret, { expiresIn });
+ jwt.sign({ ...userInfo }, jwtSecret, { expiresIn });
 
 
 export const verifyToken = async (token) => {

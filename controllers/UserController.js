@@ -39,7 +39,7 @@ import transporter from '../utils/emailsender.js';
                 });
             await newUser.save();
     
-            const token = generateToken({_id: newUser._id });
+            const token = generateToken({id: newUser._id });
             res.status(201).json({ message: 'New user created', token });
         } catch (error) {
             res.status(500).json({ message: error.message || 'Error registering user' });
@@ -71,9 +71,9 @@ import transporter from '../utils/emailsender.js';
                 return res.status(401).json({ message: 'Invalid password. Please check your password and try again.' });
             }
     
-            const token = generateToken({ id: user._id });
+            const token = generateToken({ id: user._id, email: user.email, firstName: user.firstName ,lastName:user.lastName });
     
-           // **✅ Cookie সেট করা হলো**
+          //  set cookie
             res.cookie("token", token, {
             httpOnly: true,
             // secure: process.env.NODE_ENV === "production", // Production হলে Secure হবে
@@ -84,7 +84,8 @@ import transporter from '../utils/emailsender.js';
         });
         res.status(200).json({
             message: "Login successful",
-            user: { id: user._id, email: user.email, name: user.firstName }
+            user: { id: user._id, email: user.email, firstName: user.firstName ,lastName:user.lastName},
+            token
         });
     
         } catch (error) {
@@ -94,22 +95,25 @@ import transporter from '../utils/emailsender.js';
 
 
 
-
-
-    // **🔹 Session API**
-// /api/auth/session",
+  // **🔹 Session API**
+ // /api/auth/session",
     const sessionUser= async(req, res) => {
-    const { token } = req.cookies;
-    if (!token) return res.status(401).json({ message: "Not Authenticated" });
-    // console.log("Cookies Received:", token); // ✅ Cookies Check
-    try {
-        // const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const decoded= await verifyToken(token)
-        console.log(decoded,'decode')
-        res.json(decoded);
-    } catch {
-        res.status(401).json({ message: "Invalid Token" });
-    }
+      try {
+        const token = req.cookies.token;
+        if (!token) {
+          return res.status(401).json({ message: 'No token provided' });
+        }
+    
+        const decoded = await verifyToken(token)
+        const user = await User.findById(decoded.id).select('-password');
+        if (!user) {
+          return res.status(401).json({ message: 'Invalid token' });
+        }
+    
+        res.status(200).json({ user });
+      } catch (error) {
+        res.status(401).json({ message: 'Token verification failed' });
+      }
 };
       
 // **🔹 Logout API**
@@ -375,5 +379,6 @@ export {
   deleteUser,
   admins,
   resetPasswordRequest,
-  resetPassword
+  resetPassword,
+  sessionUser
 };
