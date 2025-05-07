@@ -12,6 +12,8 @@ import 'dotenv/config';
 // import errorHandler from './middlewares/errorHandler.js';
 // import authRoutes from './routes/authRoutes.js';
 import UserRoutes from './routes/userRoutes.js';
+import AddressRoutes from './routes/AddressRoutes.js';
+
 
 // import Redis from 'ioredis';
 
@@ -56,8 +58,10 @@ app.use(cors({
 // app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Routes
-// app.use('/api/auth', authRoutes);
 app.use('/api/auth', UserRoutes);
+app.use('/api/address', AddressRoutes);
+
+
 
 // Error Handling Middleware
 // app.use(errorHandler);

@@ -1,4 +1,4 @@
-import User from '../models/UserModel.js';
+import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { verifyEmail ,generateHashPassword,verifyPassword} from '../utils/utils.js';
@@ -65,7 +65,6 @@ import transporter from '../utils/emailsender.js';
     
             // const match = await bcrypt.compare(password, user.password |"");
             const match= await verifyPassword(password,user.password)
-            console.log(match)
     
             if (!match) {
                 return res.status(401).json({ message: 'Invalid password. Please check your password and try again.' });
@@ -73,14 +72,14 @@ import transporter from '../utils/emailsender.js';
     
             const token = generateToken({ id: user._id, email: user.email, firstName: user.firstName ,lastName:user.lastName });
     
-          //  set cookie
+          //  Set cookie
             res.cookie("token", token, {
             httpOnly: true,
             // secure: process.env.NODE_ENV === "production", // Production হলে Secure হবে
             secure: false, 
             domain: 'localhost',
             sameSite: "lax", 
-            maxAge: 24 * 60 * 60 * 1000 // ১ দিন মেয়াদ (1 day)
+            maxAge: 24 * 60 * 60 * 1000 
         });
         res.status(200).json({
             message: "Login successful",
@@ -106,6 +105,7 @@ import transporter from '../utils/emailsender.js';
     
         const decoded = await verifyToken(token)
         const user = await User.findById(decoded.id).select('-password');
+        // const user = await User.findById(decoded.id);
         if (!user) {
           return res.status(401).json({ message: 'Invalid token' });
         }
@@ -115,6 +115,7 @@ import transporter from '../utils/emailsender.js';
         res.status(401).json({ message: 'Token verification failed' });
       }
 };
+
       
 // **🔹 Logout API**
 // app.post("/api/auth/logout", 
@@ -214,22 +215,60 @@ const getUserById = async (req, res, next) => {
   }
 };
 
+
+
+
+
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    console.log(currentPassword, newPassword, confirmPassword)
+
+    // Check all fields
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'New passwords do not match' });
+    }
+    const user = await User.findById(req.user.id).select('+password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) { return res.status(401).json({ message: 'Current password is incorrect' });}
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Save new password
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // @desc     Update user
 // @method   PUT
 // @endpoint /api/users/:id
 // @access   Private/Admin
 const updateUser = async (req, res, next) => {
   try {
-    const { name, email, isAdmin } = req.body;
+    const { firstName, lastName, email, phone } = req.body;
     const { id: userId } = req.params;
     const user = await User.findById(userId);
     if (!user) {
       res.statusCode = 404;
       throw new Error('User not found!');
     }
-    user.name = name || user.name;
+    user.firstName = firstName|| user.firstName;
+    user.lastName  = lastName || user.lastName;
     user.email = email || user.email;
-    user.isAdmin = Boolean(isAdmin);
+    user.phone = phone || user.phone; 
 
     const updatedUser = await user.save();
 
@@ -238,6 +277,7 @@ const updateUser = async (req, res, next) => {
     res.status(500).json({
       message: 'Internal Server Error'
     });
+    next(error);
   }
 };
 
@@ -247,17 +287,18 @@ const updateUser = async (req, res, next) => {
 // @access   Private
 const updateUserProfile = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
-
-    const user = await User.findById(req.user._id);
+    const { firstName, lastName, email, phone,  password } = req.body;
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       res.statusCode = 404;
       throw new Error('User not found. Unable to update profile.');
     }
 
-    user.name = name || user.name;
+    user.firstName = firstName|| user.firstName;
+    user.lastName  = lastName || user.lastName;
     user.email = email || user.email;
+    user.phone = phone || user.phone; 
 
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -271,7 +312,6 @@ const updateUserProfile = async (req, res, next) => {
       userId: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
-      isAdmin: updatedUser.isAdmin
     });
   } catch (error) {
     next(error);
@@ -380,5 +420,6 @@ export {
   admins,
   resetPasswordRequest,
   resetPassword,
-  sessionUser
+  sessionUser,
+  changePassword
 };

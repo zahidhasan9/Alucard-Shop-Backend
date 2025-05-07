@@ -1,10 +1,10 @@
-import User from '../models/UserModel.js';
+import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
 // Middleware to protect routes by verifying JWT authentication token.
 const protect = async (req, res, next) => {
   try {
-    const token = req.cookies.jwt;
+    const token = req.cookies.token;
 
     if (!token) {
       res.statusCode = 401;
@@ -17,8 +17,7 @@ const protect = async (req, res, next) => {
       res.statusCode = 401;
       throw new Error('Authentication failed: Invalid token.');
     }
-
-    req.user = await User.findById(decodedToken.userId).select('-password');
+    req.user = await User.findById(decodedToken.id).select('-password');
 
     next();
   } catch (error) {
@@ -39,4 +38,20 @@ const admin = (req, res, next) => {
   }
 };
 
-export { protect, admin };
+// Middleware to protect routes by verifying JWT authentication token  same like protect upu can use both.
+  const authRoute = (req, res, next) => {
+  const token = req.cookies.token || req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.id;
+    next();
+  } catch (err) {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+
+export { protect, admin , authRoute };

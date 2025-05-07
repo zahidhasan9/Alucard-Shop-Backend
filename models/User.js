@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
+  phone: {
+    type: String,
+    trim: true,
+    lowercase: true,
+  },
   password: {
     type: String,
     required: true,
@@ -32,6 +37,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  addresses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
   createdAt: {
     type: Date,
     default: Date.now,

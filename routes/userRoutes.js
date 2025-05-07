@@ -11,6 +11,7 @@ import {
     updateUserProfile,
     deleteUser,
     admins,
+    changePassword,
     resetPasswordRequest,
     resetPassword} from '../controllers/UserController.js';
     import { protect, admin } from '../middlewares/authMiddleware.js';
@@ -25,6 +26,8 @@ router.post("/logout", logoutUser);
 router.post("/resetPasswordRequest", resetPasswordRequest);
 router.post("/reset-password/:id/:token", resetPassword);
 router.post("/user/:id",protect, getUserById);
+router.put("/user",protect, updateUserProfile);
+router.put("/changepassword",protect, changePassword);
 
 
 
