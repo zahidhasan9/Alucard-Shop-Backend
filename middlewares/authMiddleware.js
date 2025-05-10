@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import User from '../models/UserModel.js';
 import jwt from 'jsonwebtoken';
 
 // Middleware to protect routes by verifying JWT authentication token.
@@ -39,19 +39,18 @@ const admin = (req, res, next) => {
 };
 
 // Middleware to protect routes by verifying JWT authentication token  same like protect upu can use both.
-  const authRoute = (req, res, next) => {
-  const token = req.cookies.token || req.header("Authorization")?.replace("Bearer ", "");
+const authRoute = (req, res, next) => {
+  const token = req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
 
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = decoded.id;
     next();
   } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
-
-export { protect, admin , authRoute };
+export { protect, admin, authRoute };

@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import User from '../models/UserModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { verifyEmail, generateHashPassword, verifyPassword } from '../utils/utils.js';
