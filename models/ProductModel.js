@@ -14,11 +14,15 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // Image URL of the product
-    image: {
+    thumbnail: {
       type: String,
-      required: true,
     },
+    // Image URL of the product
+    images: [
+      {
+        type: String,
+      },
+    ],
     // Description of the product
     description: {
       type: String,

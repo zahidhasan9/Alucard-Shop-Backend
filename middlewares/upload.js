@@ -85,7 +85,7 @@ if (UPLOAD_METHOD === 'cloudinary') {
     }
   };
 
-  upload = multer({ storage });
+  upload = multer({ storage, fileFilter });
 } else {
   // Ensure uploads folder exists
   const uploadDir = path.join(__dirname, '../uploads');
@@ -121,4 +121,10 @@ if (UPLOAD_METHOD === 'cloudinary') {
   upload = multer({ storage, fileFilter });
 }
 
-export default upload;
+export default upload; // If use upload it is only for single upload
+
+// //  export multiple field handler for thumbnail and images
+// export const uploadMultiple = upload.fields([
+//   { name: 'thumbnail', maxCount: 1 },
+//   { name: 'images', maxCount: 3 },
+// ]);

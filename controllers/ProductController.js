@@ -1,22 +1,51 @@
 import Product from '../models/productModel.js';
-
+import { deleteImage } from '../utils/imageHandler.js';
 // @desc     Create product
 // @method   POST
 // @endpoint /api/product/add
 // @access   Private/Admin
+// const createProduct = async (req, res) => {    // forsingle pic upload
+//   try {
+//     const { name, description, brand, category, price, countInStock } = req.body;
+//     let imageUrl;
+//     // if (process.env.UPLOAD_METHOD === 'cloudinary') {
+//     //   console.log('Cloudinary response:', req.file); // Cloudinary responce
+//     // }
+//     if (process.env.UPLOAD_METHOD === 'cloudinary') {
+//       imageUrl = imageUrl = req.file.path; // Cloudinary returns hosted image URL here
+//     } else {
+//       imageUrl = `/uploads/${req.file.filename}`; // For local
+//     }
+//     console.log('id p', req.file.path);
+//     const product = new Product({
+//       user: req.user._id,
+//       name,
+//       description,
+//       brand,
+//       category: req.user._id,
+//       price,
+//       countInStock,
+//       image: imageUrl,
+//     });
+
+//     await product.save();
+//     res.status(201).json({ success: true, product });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: 'Server Error', error });
+//     // console.log(error);
+//   }
+// };
+
 const createProduct = async (req, res) => {
   try {
     const { name, description, brand, category, price, countInStock } = req.body;
-    let imageUrl;
-    // if (process.env.UPLOAD_METHOD === 'cloudinary') {
-    //   console.log('Cloudinary response:', req.file); // Cloudinary responce
-    // }
+    let imageUrls;
+
     if (process.env.UPLOAD_METHOD === 'cloudinary') {
-      imageUrl = imageUrl = req.file.path; // Cloudinary returns hosted image URL here
+      imageUrls = req.files.map(file => file.path); // Cloudinary hosted URLs
     } else {
-      imageUrl = `/uploads/${req.file.filename}`; // For local
+      imageUrls = req.files.map(file => `/uploads/${file.filename}`); // Local upload paths
     }
-    console.log('id p', req.file.path);
     const product = new Product({
       user: req.user._id,
       name,
@@ -25,7 +54,8 @@ const createProduct = async (req, res) => {
       category: req.user._id,
       price,
       countInStock,
-      image: imageUrl,
+      thumbnail: imageUrls[0],
+      images: imageUrls.slice(1),
     });
 
     await product.save();
@@ -114,10 +144,11 @@ const getProduct = async (req, res, next) => {
 // @method   PUT
 // @endpoint /api/v1/products/:id
 // @access   Private/Admin
+
 const updateProduct = async (req, res, next) => {
   try {
     const { name, image, description, brand, category, price, countInStock } = req.body;
-
+    let imageUrls;
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -125,23 +156,33 @@ const updateProduct = async (req, res, next) => {
       throw new Error('Product not found!');
     }
 
-    // Save the current image path before updating
-    const previousImage = product.image;
+    if (req.files && req.files.length > 0) {
+      // Delete old images from cloudinary or local server
+      await deleteImage(product.thumbnail);
+      for (const img of product.images) {
+        await deleteImage(img);
+      }
+
+      // Set new image URLs
+      if (process.env.UPLOAD_METHOD === 'cloudinary') {
+        imageUrls = req.files.map(file => file.path); // Cloudinary hosted URLs
+      } else {
+        imageUrls = req.files.map(file => `/uploads/${file.filename}`); // Local upload paths
+      }
+    }
 
     product.name = name || product.name;
-    product.image = image || product.image;
     product.description = description || product.description;
     product.brand = brand || product.brand;
     product.category = category || product.category;
     product.price = price || product.price;
     product.countInStock = countInStock || product.countInStock;
-
-    const updatedProduct = await product.save();
-
-    // Delete the previous image if it exists and if it's different from the new image
-    if (previousImage && previousImage !== updatedProduct.image) {
-      deleteFile(previousImage);
+    // Update image URLs only if new images are uploaded
+    if (imageUrls.length > 0) {
+      product.thumbnail = imageUrls[0]; // First image as thumbnail
+      product.images = imageUrls.slice(1); // Remaining images
     }
+    const updatedProduct = await product.save();
 
     res.status(200).json({ message: 'Product updated', updatedProduct });
   } catch (error) {
@@ -153,21 +194,21 @@ const updateProduct = async (req, res, next) => {
 // @method   DELETE
 // @endpoint /api/v1/products/:id
 // @access   Admin
-const deleteProduct = async (req, res, next) => {
+const deleteProduct = async (req, res) => {
   try {
-    const { id: productId } = req.params;
-    const product = await Product.findById(productId);
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+    await deleteImage(product.thumbnail);
 
-    if (!product) {
-      res.statusCode = 404;
-      throw new Error('Product not found!');
+    for (const img of product.images) {
+      await deleteImage(img);
     }
-    await Product.deleteOne({ _id: product._id });
-    deleteFile(product.image); // Remove upload file
 
-    res.status(200).json({ message: 'Product deleted' });
+    await product.deleteOne();
+
+    res.status(200).json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
-    next(error);
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   }
 };
 

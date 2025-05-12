@@ -8,7 +8,6 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import { connectDB } from './config/db.js';
-
 import 'dotenv/config';
 
 // import errorHandler from './middlewares/errorHandler.js';
