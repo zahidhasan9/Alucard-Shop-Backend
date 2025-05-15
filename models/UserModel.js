@@ -37,14 +37,13 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-  addresses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
+  addresses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Address' }],
+  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
-
-
 
 // Create the User model
 const User = mongoose.model('User', userSchema);

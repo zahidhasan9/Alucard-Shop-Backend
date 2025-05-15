@@ -1,4 +1,5 @@
 import User from '../models/UserModel.js';
+// import Order from "../models/Order.js";
 import jwt from 'jsonwebtoken';
 
 // Middleware to protect routes by verifying JWT authentication token.
@@ -54,3 +55,20 @@ const authRoute = (req, res, next) => {
 };
 
 export { protect, admin, authRoute };
+
+// check product purchased after add reviwe
+// export const hasPurchased = async (req, res, next) => {
+//   const userId = req.user._id;
+//   const productId = req.body.product;
+
+//   const order = await Order.findOne({
+//     user: userId,
+//     'items.product': productId,
+//   });
+
+//   if (!order) {
+//     return res.status(403).json({ message: 'You can only review purchased products.' });
+//   }
+
+//   next();
+// };
