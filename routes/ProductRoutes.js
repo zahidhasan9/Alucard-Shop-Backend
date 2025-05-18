@@ -7,6 +7,7 @@ import {
   updateProduct,
   createProductReview,
   getTopProducts,
+  getProductsByCategory,
 } from '../controllers/ProductController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 import upload from '../middlewares/upload.js';
@@ -19,6 +20,8 @@ router.post('/add', upload.array('images', 6), protect, createProduct);
 router.get('/', getProducts);
 router.get('/top', getTopProducts);
 router.delete('/:id', deleteProduct);
+router.get('/category/:slug', getProductsByCategory);
+router.put('/:id', updateProduct);
 // router.put('/:id', authRoute, updateAddress);
 // router.delete('/:id', authRoute, deleteAddress);
 

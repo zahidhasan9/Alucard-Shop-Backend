@@ -1,4 +1,5 @@
 import Product from '../models/productModel.js';
+import Category from '../models/CategoryModel.js';
 import { deleteImage } from '../utils/imageHandler.js';
 // @desc     Create product
 // @method   POST
@@ -51,7 +52,7 @@ const createProduct = async (req, res) => {
       name,
       description,
       brand,
-      category: req.user._id,
+      category,
       price,
       countInStock,
       thumbnail: imageUrls[0],
@@ -69,18 +70,73 @@ const createProduct = async (req, res) => {
 // @method   GET
 // @endpoint /api/v1/products?limit=2&skip=0
 // @access   Public
+// const getProducts = async (req, res, next) => {
+//   try {
+//     const total = await Product.countDocuments();
+//     const maxLimit = process.env.PAGINATION_MAX_LIMIT;
+//     const maxSkip = total === 0 ? 0 : total - 1;
+//     const limit = Number(req.query.limit) || maxLimit;
+//     const skip = Number(req.query.skip) || 0;
+//     const search = req.query.search || '';
+
+//     const products = await Product.find({
+//       name: { $regex: search, $options: 'i' },
+//     })
+//       .limit(limit > maxLimit ? maxLimit : limit)
+//       .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip);
+
+//     if (!products || products.length === 0) {
+//       res.statusCode = 404;
+//       throw new Error('Products not found!');
+//     }
+
+//     res.status(200).json({
+//       products,
+//       total,
+//       maxLimit,
+//       maxSkip,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
 const getProducts = async (req, res, next) => {
   try {
     const total = await Product.countDocuments();
-    const maxLimit = process.env.PAGINATION_MAX_LIMIT;
+    const maxLimit = parseInt(process.env.PAGINATION_MAX_LIMIT) || 20;
     const maxSkip = total === 0 ? 0 : total - 1;
+
     const limit = Number(req.query.limit) || maxLimit;
     const skip = Number(req.query.skip) || 0;
     const search = req.query.search || '';
 
-    const products = await Product.find({
-      name: { $regex: search, $options: 'i' },
-    })
+    // Filtering params
+    const category = req.query.category;
+    const brand = req.query.brand;
+    const minPrice = Number(req.query.minPrice) || 0;
+    const maxPrice = Number(req.query.maxPrice) || Number.MAX_SAFE_INTEGER;
+    const minRating = Number(req.query.minRating) || 0;
+    const sortBy = req.query.sort || 'price';
+
+    // Sorting
+    let sortOption = {};
+    if (sortBy === 'price') sortOption = { price: 1 };
+    else if (sortBy === 'price_desc') sortOption = { price: -1 };
+    else if (sortBy === 'popularity') sortOption = { rating: -1 };
+
+    // Building filter object
+    const filter = {
+      name: { $regex: search, $options: 'i' }, // for search by name
+      price: { $gte: minPrice, $lte: maxPrice }, // price range
+      rating: { $gte: minRating }, // minimum rating
+    };
+
+    if (category) filter.category = category;
+    if (brand) filter.brand = brand;
+
+    const products = await Product.find(filter)
+      .sort(sortOption) // <--  sort apply
       .limit(limit > maxLimit ? maxLimit : limit)
       .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip);
 
@@ -94,12 +150,12 @@ const getProducts = async (req, res, next) => {
       total,
       maxLimit,
       maxSkip,
+      filterUsed: filter,
     });
   } catch (error) {
     next(error);
   }
 };
-
 // @desc     Fetch top products
 // @method   GET
 // @endpoint /api/v1/products/top
@@ -147,7 +203,7 @@ const getProduct = async (req, res, next) => {
 const updateProduct = async (req, res, next) => {
   try {
     const { name, image, description, brand, category, price, countInStock } = req.body;
-    let imageUrls;
+    let imageUrls = []; // initialize to empty array
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -257,6 +313,48 @@ const createProductReview = async (req, res, next) => {
   }
 };
 
+// Get products by category slug
+const getProductsByCategory = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    //  Pagination & Filtering query parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sortBy = req.query.sortBy || 'createdAt'; // price, name, etc.
+    const order = req.query.order === 'asc' ? 1 : -1;
+    const minPrice = parseFloat(req.query.minPrice) || 0;
+    const maxPrice = parseFloat(req.query.maxPrice) || Number.MAX_SAFE_INTEGER;
+
+    // Find the Category by slug
+    const category = await Category.findOne({ slug });
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    const filter = {
+      category: category._id,
+      price: { $gte: minPrice, $lte: maxPrice },
+    };
+    const total = await Product.countDocuments(filter);
+
+    const products = await Product.find(filter)
+      .sort({ [sortBy]: order }) // sorting
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('category');
+
+    res.status(200).json({
+      success: true,
+      total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      data: products,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export {
   getProducts,
   getProduct,
@@ -265,4 +363,5 @@ export {
   deleteProduct,
   createProductReview,
   getTopProducts,
+  getProductsByCategory,
 };

@@ -31,7 +31,6 @@ const productSchema = new mongoose.Schema(
     // Brand of the product
     brand: {
       type: String,
-      required: true,
     },
     // Category of the product
     category: {

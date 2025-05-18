@@ -14,6 +14,7 @@ import 'dotenv/config';
 import ProductRoutes from './routes/ProductRoutes.js';
 import UserRoutes from './routes/userRoutes.js';
 import AddressRoutes from './routes/AddressRoutes.js';
+import CategoryRoutes from './routes/CategoryRoutes.js';
 
 // import Redis from 'ioredis';
 
@@ -62,7 +63,7 @@ app.use(
 app.use('/api/auth', UserRoutes);
 app.use('/api/address', AddressRoutes);
 app.use('/api/product', ProductRoutes);
-
+app.use('/api/category', CategoryRoutes);
 // Error Handling Middleware
 // app.use(errorHandler);
 
