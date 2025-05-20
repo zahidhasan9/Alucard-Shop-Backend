@@ -15,6 +15,7 @@ import ProductRoutes from './routes/ProductRoutes.js';
 import UserRoutes from './routes/userRoutes.js';
 import AddressRoutes from './routes/AddressRoutes.js';
 import CategoryRoutes from './routes/CategoryRoutes.js';
+import ReviewRoutes from './routes/ReviewRoutes.js';
 
 // import Redis from 'ioredis';
 
@@ -35,7 +36,14 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
 });
 
-// Middlewares
+// Essential Middlewares
+app.use(
+  cors({
+    origin: 'http://localhost:5173', //  Frontend URL
+    credentials: true, // Cookies & Session Allow
+    exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 // app.use(cors());
@@ -45,16 +53,9 @@ app.use(limiter);
 app.use(passport.initialize());
 app.use(compression());
 
-const __dirname = path.resolve(); // Set {__dirname} to current working directory
+// Set {__dirname} to current working directory
+const __dirname = path.resolve();
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-app.use(
-  cors({
-    origin: 'http://localhost:5173', //  Frontend URL
-    credentials: true, // Cookies & Session Allow
-    exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
-  })
-);
 
 // Swagger API Docs
 // app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -64,11 +65,12 @@ app.use('/api/auth', UserRoutes);
 app.use('/api/address', AddressRoutes);
 app.use('/api/product', ProductRoutes);
 app.use('/api/category', CategoryRoutes);
+app.use('/api/review', ReviewRoutes);
 // Error Handling Middleware
 // app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.get('/', res => {
+app.get('/', (req, res) => {
   res.status(200).json({ message: 'running' });
 });
 app.listen(PORT, () => {

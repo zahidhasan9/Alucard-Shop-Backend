@@ -44,6 +44,17 @@ const productSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    // oldPrice of the product
+    oldPrice: {
+      type: Number,
+      required: false,
+    },
+    // discount of the product
+    discount: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     // Quantity available in stock
     countInStock: {
       type: Number,

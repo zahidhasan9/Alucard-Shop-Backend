@@ -39,14 +39,18 @@ import { deleteImage } from '../utils/imageHandler.js';
 
 const createProduct = async (req, res) => {
   try {
-    const { name, description, brand, category, price, countInStock } = req.body;
-    let imageUrls;
+    const { name, description, brand, category, price, countInStock, oldPrice } = req.body;
+    let imageUrls = [];
 
     if (process.env.UPLOAD_METHOD === 'cloudinary') {
       imageUrls = req.files.map(file => file.path); // Cloudinary hosted URLs
     } else {
       imageUrls = req.files.map(file => `/uploads/${file.filename}`); // Local upload paths
     }
+    // if oldPrice not provided, use price
+    const finalOldPrice = oldPrice || price;
+    const discount =
+      finalOldPrice && price ? Math.round(((finalOldPrice - price) / finalOldPrice) * 100) : 0;
     const product = new Product({
       user: req.user._id,
       name,
@@ -54,6 +58,8 @@ const createProduct = async (req, res) => {
       brand,
       category,
       price,
+      oldPrice: finalOldPrice,
+      discount,
       countInStock,
       thumbnail: imageUrls[0],
       images: imageUrls.slice(1),
@@ -202,7 +208,7 @@ const getProduct = async (req, res, next) => {
 
 const updateProduct = async (req, res, next) => {
   try {
-    const { name, image, description, brand, category, price, countInStock } = req.body;
+    const { name, description, brand, category, price, oldPrice, countInStock } = req.body;
     let imageUrls = []; // initialize to empty array
     const product = await Product.findById(req.params.id);
 
@@ -226,11 +232,21 @@ const updateProduct = async (req, res, next) => {
       }
     }
 
+    // Recalculate discount if price or oldPrice changed
+    let discount = product.discount;
+    if (price || oldPrice) {
+      const finalOldPrice = oldPrice || product.oldPrice || product.price;
+      const finalNewPrice = price || product.price;
+      discount = Math.round(((finalOldPrice - finalNewPrice) / finalOldPrice) * 100);
+    }
+
     product.name = name || product.name;
     product.description = description || product.description;
     product.brand = brand || product.brand;
     product.category = category || product.category;
     product.price = price || product.price;
+    product.oldPrice = oldPrice || product.oldPrice || product.price;
+    product.discount = discount;
     product.countInStock = countInStock || product.countInStock;
     // Update image URLs only if new images are uploaded
     if (imageUrls.length > 0) {
