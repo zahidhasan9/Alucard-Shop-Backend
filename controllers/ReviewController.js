@@ -102,6 +102,24 @@ export const getProductReviews = async (req, res) => {
   }
 };
 
+export const getUserAllReviews = async (req, res) => {
+  try {
+    const Id = req.user._id;
+    const reviews = await Review.find({ user: Id }).populate('product', 'name price');
+
+    res.status(200).json({
+      success: true,
+      reviews,
+    });
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching reviews.',
+    });
+  }
+};
+
 // Admin can delete any review
 export const deleteReview = async (req, res) => {
   try {

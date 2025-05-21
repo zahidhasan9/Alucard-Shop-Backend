@@ -6,6 +6,7 @@ import {
   deleteMyReview,
   deleteReview,
   createReviewTest,
+  getUserAllReviews,
 } from '../controllers/ReviewController.js';
 import { protect, authRoute } from '../middlewares/authMiddleware.js';
 // import { hasPurchased } from "../middlewares/hasPurchased.js";
@@ -13,6 +14,7 @@ import { protect, authRoute } from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.post('/', protect, createReview);
+router.get('/user', protect, getUserAllReviews);
 router.get('/:productId', getProductReviews);
 
 // router.post("/", isAuthenticated, hasPurchased, createReview);
