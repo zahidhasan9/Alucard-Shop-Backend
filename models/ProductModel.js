@@ -55,6 +55,11 @@ const productSchema = new mongoose.Schema(
       required: false,
       default: 0,
     },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     // Quantity available in stock
     countInStock: {
       type: Number,

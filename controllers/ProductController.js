@@ -1,6 +1,8 @@
 import Product from '../models/productModel.js';
 import Category from '../models/CategoryModel.js';
 import { deleteImage } from '../utils/imageHandler.js';
+import slugify from 'slugify';
+
 // @desc     Create product
 // @method   POST
 // @endpoint /api/product/add
@@ -47,6 +49,14 @@ const createProduct = async (req, res) => {
     } else {
       imageUrls = req.files.map(file => `/uploads/${file.filename}`); // Local upload paths
     }
+
+    // Make sure slug is unique
+    let slug = slugify(name, { lower: true, strict: true });
+    const existingProduct = await Product.findOne({ slug });
+    if (existingProduct) {
+      slug = `${slug}-${Date.now()}`;
+    }
+
     // if oldPrice not provided, use price
     const finalOldPrice = oldPrice || price;
     const discount =
@@ -60,6 +70,7 @@ const createProduct = async (req, res) => {
       price,
       oldPrice: finalOldPrice,
       discount,
+      slug,
       countInStock,
       thumbnail: imageUrls[0],
       images: imageUrls.slice(1),
