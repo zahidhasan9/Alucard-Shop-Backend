@@ -198,8 +198,9 @@ const getTopProducts = async (req, res, next) => {
 // @access   Public
 const getProduct = async (req, res, next) => {
   try {
-    const { id: productId } = req.params;
-    const product = await Product.findById(productId);
+    const { slug } = req.params;
+    console.log('slug', slug);
+    const product = await Product.findOne({ slug });
 
     if (!product) {
       res.statusCode = 404;

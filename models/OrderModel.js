@@ -9,6 +9,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
       ref: 'User',
     },
+    orderId: { type: String, required: true, unique: true },
     // Array of order items, each containing product details
     orderItems: [
       {
@@ -16,11 +17,12 @@ const orderSchema = new mongoose.Schema(
         qty: { type: Number, required: true },
         image: { type: String, required: true },
         price: { type: Number, required: true },
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true,
-          ref: 'Product',
-        },
+        slug: { type: String, required: true },
+        // product: {
+        //   type: mongoose.Schema.Types.ObjectId,
+        //   required: true,
+        //   ref: 'Product',
+        // },
       },
     ],
     // Shipping address details
@@ -28,7 +30,7 @@ const orderSchema = new mongoose.Schema(
       address: { type: String, required: true },
       city: { type: String, required: true },
       postalCode: { type: String, required: true },
-      country: { type: String, required: true },
+      division: { type: String, required: true },
     },
     // Payment method used for the order
     paymentMethod: {

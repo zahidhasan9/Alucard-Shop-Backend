@@ -1,4 +1,5 @@
 import Order from '../models/OrderModel.js';
+import { nanoid } from 'nanoid';
 
 // @desc     Create new order
 // @method   POST
@@ -29,6 +30,8 @@ const addOrderItems = async (req, res, next) => {
       throw new Error('No order items.');
     }
 
+    const orderId = 'ORD-' + nanoid(8); // ORD-A1B2C3D4
+
     const order = new Order({
       user: req.user._id,
       orderItems: cartItems.map(item => ({
@@ -41,6 +44,7 @@ const addOrderItems = async (req, res, next) => {
       taxPrice,
       shippingPrice,
       totalPrice,
+      orderId,
     });
 
     const createdOrder = await order.save();
@@ -76,10 +80,11 @@ const getMyOrders = async (req, res, next) => {
 // @access   Private
 const getOrderById = async (req, res, next) => {
   try {
-    const { id: orderId } = req.params;
+    const { orderId } = req.params;
 
-    const order = await Order.findById(orderId).populate('user', 'name email');
-
+    // fetch by _id
+    // const order = await Order.findById(orderId).populate('user', 'firstName lastName email');
+    const order = await Order.findOne(orderId).populate('user', 'firstName lastName phone email');
     if (!order) {
       res.statusCode = 404;
       throw new Error('Order not found!');
@@ -165,6 +170,17 @@ const getOrders = async (req, res, next) => {
   }
 };
 
+// GET /api/orders/last   (last oder view for order sucess page)
+const getLastOrder = async (req, res) => {
+  const order = await Order.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(1);
+
+  if (!order || order.length === 0) {
+    return res.status(404).json({ message: 'No orders found' });
+  }
+
+  res.status(200).json(order[0]);
+};
+
 export {
   addOrderItems,
   getMyOrders,
@@ -172,4 +188,5 @@ export {
   updateOrderToPaid,
   updateOrderToDeliver,
   getOrders,
+  getLastOrder,
 };
