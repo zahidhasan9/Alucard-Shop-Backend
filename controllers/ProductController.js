@@ -1,4 +1,4 @@
-import Product from '../models/productModel.js';
+import Product from '../models/ProductModel.js';
 import Category from '../models/CategoryModel.js';
 import { deleteImage } from '../utils/imageHandler.js';
 import slugify from 'slugify';
@@ -155,7 +155,8 @@ const getProducts = async (req, res, next) => {
     const products = await Product.find(filter)
       .sort(sortOption) // <--  sort apply
       .limit(limit > maxLimit ? maxLimit : limit)
-      .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip);
+      .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip)
+      .populate('category', 'name');
 
     if (!products || products.length === 0) {
       res.statusCode = 404;

@@ -43,9 +43,16 @@ const limiter = rateLimit({
 });
 
 // Essential Middlewares
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
 app.use(
   cors({
-    origin: 'http://localhost:5173', //  Frontend URL
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true, // Cookies & Session Allow
     exposedHeaders: ['Set-Cookie', 'Date', 'ETag'],
   })

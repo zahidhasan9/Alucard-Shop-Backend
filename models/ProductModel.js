@@ -69,7 +69,7 @@ const productSchema = new mongoose.Schema(
     // Array of reviews associated with the product
     // reviews: [reviewSchema],
     // Overall rating of the product
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    // user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     rating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
   },

@@ -1,5 +1,6 @@
 // controllers/reviewController.js
 import Review from '../models/ReviewModel.js';
+import Product from '../models/ProductModel.js';
 // import Order from '../models/OrderModel.js';
 
 export const createReview = async (req, res) => {
@@ -38,6 +39,9 @@ export const createReview = async (req, res) => {
       comment,
     });
 
+    // Update product rating after review
+    await updateProductRating(product);
+
     res.status(201).json({
       success: true,
       message: 'Review created successfully',
@@ -69,6 +73,9 @@ export const deleteMyReview = async (req, res) => {
     }
 
     await review.deleteOne();
+
+    // ✅ Update rating after deleting review
+    await updateProductRating(review.product);
 
     res.status(200).json({
       success: true,
@@ -131,6 +138,8 @@ export const deleteReview = async (req, res) => {
     }
 
     await review.deleteOne();
+    // Update rating after deleting review
+    await updateProductRating(review.product);
 
     res.status(200).json({
       success: true,
@@ -172,4 +181,17 @@ export const createReviewTest = async (req, res) => {
       message: 'Server error while creating review.',
     });
   }
+};
+
+// ----------------utility function---------
+const updateProductRating = async productId => {
+  const reviews = await Review.find({ product: productId });
+
+  const numReviews = reviews.length;
+  const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / (numReviews || 1);
+
+  await Product.findByIdAndUpdate(productId, {
+    numReviews,
+    rating: averageRating.toFixed(1), // e.g. 4.5
+  });
 };
