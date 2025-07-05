@@ -75,7 +75,8 @@ if (UPLOAD_METHOD === 'cloudinary') {
       file.mimetype === 'image/png' ||
       file.mimetype === 'image/jpg' ||
       file.mimetype === 'image/jpeg' ||
-      file.mimetype === 'image/webp'
+      file.mimetype === 'image/webp' ||
+      file.mimetype === 'image/avif'
     ) {
       // To accept the file pass `true`, like so:
       cb(null, true);

@@ -28,6 +28,9 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    product_type: {
+      type: String,
+    },
     // Brand of the product
     brand: {
       type: String,
@@ -60,11 +63,19 @@ const productSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    flash_sell: {
+      type: Boolean,
+      required: false,
+    },
     // Quantity available in stock
     countInStock: {
       type: Number,
       required: true,
       default: 0,
+    },
+    sku: {
+      type: String,
+      required: true,
     },
     // Array of reviews associated with the product
     // reviews: [reviewSchema],

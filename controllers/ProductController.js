@@ -2,6 +2,7 @@ import Product from '../models/ProductModel.js';
 import Category from '../models/CategoryModel.js';
 import { deleteImage } from '../utils/imageHandler.js';
 import slugify from 'slugify';
+import { nanoid } from 'nanoid';
 
 // @desc     Create product
 // @method   POST
@@ -50,6 +51,8 @@ const createProduct = async (req, res) => {
       imageUrls = req.files.map(file => `/uploads/${file.filename}`); // Local upload paths
     }
 
+    //sku number
+    const sku = 'SKU-' + nanoid(8); // SKU-A1B2C3D4
     // Make sure slug is unique
     let slug = slugify(name, { lower: true, strict: true });
     const existingProduct = await Product.findOne({ slug });
@@ -71,9 +74,11 @@ const createProduct = async (req, res) => {
       oldPrice: finalOldPrice,
       discount,
       slug,
+      sku,
       countInStock,
       thumbnail: imageUrls[0],
-      images: imageUrls.slice(1),
+      images: imageUrls,
+      // images: imageUrls.slice(1),
     });
 
     await product.save();
