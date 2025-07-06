@@ -83,6 +83,18 @@ const productSchema = new mongoose.Schema(
     // user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     rating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
+    details: [
+      {
+        key: { type: String, required: true },
+        value: { type: String, required: true },
+      },
+    ],
+    variants: [
+      {
+        name: { type: String }, // eg: 'Color', 'Size', 'RAM', 'Fabric'
+        value: { type: String }, // eg: 'Black', 'XL', '8GB', 'Cotton'
+      },
+    ],
   },
   { timestamps: true }
 );

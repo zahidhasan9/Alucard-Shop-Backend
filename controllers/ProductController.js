@@ -42,7 +42,19 @@ import { nanoid } from 'nanoid';
 
 const createProduct = async (req, res) => {
   try {
-    const { name, description, brand, category, price, countInStock, oldPrice } = req.body;
+    const { name, description, brand, category, price, countInStock, oldPrice, variants, details } =
+      req.body;
+    console.log(
+      name,
+      description,
+      brand,
+      category,
+      price,
+      countInStock,
+      oldPrice,
+      variants,
+      details
+    );
     let imageUrls = [];
 
     if (process.env.UPLOAD_METHOD === 'cloudinary') {
@@ -78,13 +90,16 @@ const createProduct = async (req, res) => {
       countInStock,
       thumbnail: imageUrls[0],
       images: imageUrls,
+      variants,
+      details,
       // images: imageUrls.slice(1),
     });
 
     await product.save();
     res.status(201).json({ success: true, product });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    console.error('Product creation error:', error.message);
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
   }
 };
 
