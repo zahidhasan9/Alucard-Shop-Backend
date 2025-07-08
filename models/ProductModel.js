@@ -33,7 +33,9 @@ const productSchema = new mongoose.Schema(
     },
     // Brand of the product
     brand: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      // required: true,
+      ref: 'Brand',
     },
     // Category of the product
     category: {

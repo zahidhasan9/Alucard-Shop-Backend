@@ -22,7 +22,7 @@ router.get('/top', getTopProducts);
 router.get('/:slug', getProduct);
 router.delete('/:id', deleteProduct);
 router.get('/category/:slug', getProductsByCategory);
-router.put('/:id', updateProduct);
+router.put('/:slug', upload.array('images', 6), protect, updateProduct);
 // router.put('/:id', authRoute, updateAddress);
 // router.delete('/:id', authRoute, deleteAddress);
 

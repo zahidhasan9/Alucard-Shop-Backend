@@ -44,17 +44,6 @@ const createProduct = async (req, res) => {
   try {
     const { name, description, brand, category, price, countInStock, oldPrice, variants, details } =
       req.body;
-    console.log(
-      name,
-      description,
-      brand,
-      category,
-      price,
-      countInStock,
-      oldPrice,
-      variants,
-      details
-    );
     let imageUrls = [];
 
     if (process.env.UPLOAD_METHOD === 'cloudinary') {
@@ -164,10 +153,24 @@ const getProducts = async (req, res, next) => {
 
     // Building filter object
     const filter = {
-      name: { $regex: search, $options: 'i' }, // for search by name
+      // name: { $regex: search, $options: 'i' }, // for search by name
       price: { $gte: minPrice, $lte: maxPrice }, // price range
       rating: { $gte: minRating }, // minimum rating
     };
+    // Keyword search on name, category, or brand
+    if (search) {
+      // Category name match categoryIds
+      const matchedCategories = await Category.find({
+        name: { $regex: search, $options: 'i' },
+      });
+      const categoryIds = matchedCategories.map(cat => cat._id);
+
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { brand: { $regex: search, $options: 'i' } },
+        { category: { $in: categoryIds } }, // ✅ now this works
+      ];
+    }
 
     if (category) filter.category = category;
     if (brand) filter.brand = brand;
@@ -220,8 +223,7 @@ const getTopProducts = async (req, res, next) => {
 const getProduct = async (req, res, next) => {
   try {
     const { slug } = req.params;
-    console.log('slug', slug);
-    const product = await Product.findOne({ slug });
+    const product = await Product.findOne({ slug }).populate('category', 'name');
 
     if (!product) {
       res.statusCode = 404;
@@ -241,9 +243,13 @@ const getProduct = async (req, res, next) => {
 
 const updateProduct = async (req, res, next) => {
   try {
-    const { name, description, brand, category, price, oldPrice, countInStock } = req.body;
+    const { name, description, brand, category, price, oldPrice, countInStock, variants, details } =
+      req.body;
     let imageUrls = []; // initialize to empty array
-    const product = await Product.findById(req.params.id);
+    const { slug } = req.params;
+    console.log(name, description, brand, category, price, oldPrice, countInStock);
+    const product = await Product.findOne({ slug });
+    // const product = await Product.findById(req.params.id);
 
     if (!product) {
       res.statusCode = 404;
@@ -281,11 +287,15 @@ const updateProduct = async (req, res, next) => {
     product.oldPrice = oldPrice || product.oldPrice || product.price;
     product.discount = discount;
     product.countInStock = countInStock || product.countInStock;
+    product.variants = variants || product.variants;
+    product.details = details || product.details;
     // Update image URLs only if new images are uploaded
     if (imageUrls.length > 0) {
       product.thumbnail = imageUrls[0]; // First image as thumbnail
-      product.images = imageUrls.slice(1); // Remaining images
+      product.images = imageUrls; // Remaining images
+      // product.images = imageUrls.slice(1); // Remaining images
     }
+
     const updatedProduct = await product.save();
 
     res.status(200).json({ message: 'Product updated', updatedProduct });
