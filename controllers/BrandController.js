@@ -14,7 +14,7 @@ export const createBrand = async (req, res) => {
     const brand = new Brand({ name, slug });
     await brand.save();
 
-    res.status(201).json({ success: true, data: category });
+    res.status(201).json({ success: true, data: brand });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
