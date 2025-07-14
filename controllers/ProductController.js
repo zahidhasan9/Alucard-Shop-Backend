@@ -223,7 +223,9 @@ const getTopProducts = async (req, res, next) => {
 const getProduct = async (req, res, next) => {
   try {
     const { slug } = req.params;
-    const product = await Product.findOne({ slug }).populate('category', 'name');
+    const product = await Product.findOne({ slug })
+      .populate('category', 'name')
+      .populate('brand', 'name');
 
     if (!product) {
       res.statusCode = 404;
@@ -247,7 +249,6 @@ const updateProduct = async (req, res, next) => {
       req.body;
     let imageUrls = []; // initialize to empty array
     const { slug } = req.params;
-    console.log(name, description, brand, category, price, oldPrice, countInStock);
     const product = await Product.findOne({ slug });
     // const product = await Product.findById(req.params.id);
 

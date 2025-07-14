@@ -84,7 +84,10 @@ const getOrderById = async (req, res, next) => {
 
     // fetch by _id
     // const order = await Order.findById(orderId).populate('user', 'firstName lastName email');
-    const order = await Order.findOne(orderId).populate('user', 'firstName lastName phone email');
+    const order = await Order.findOne({ orderId }).populate(
+      'user',
+      'firstName lastName phone email'
+    );
     if (!order) {
       res.statusCode = 404;
       throw new Error('Order not found!');
