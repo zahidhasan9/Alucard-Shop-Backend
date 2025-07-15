@@ -1,4 +1,5 @@
 import Order from '../models/OrderModel.js';
+import User from '../models/UserModel.js';
 import { nanoid } from 'nanoid';
 
 // @desc     Create new order
@@ -161,7 +162,26 @@ const updateOrderToDeliver = async (req, res) => {
 // @access   Private/Admin
 const getOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find().populate('user', 'id name');
+    const maxLimit = 15;
+    const limit = Number(req.query.limit) || maxLimit;
+    const skip = Number(req.query.skip) || 0;
+    const search = req.query.search || '';
+
+    let userIds = [];
+    if (search) {
+      const regex = new RegExp(search, 'i'); // case‑insensitive
+      userIds = await User.find({ firstName: regex }).distinct('_id');
+    }
+    const regex = new RegExp(search, 'i');
+    const filter = search ? { $or: [{ orderId: regex }, { user: { $in: userIds } }] } : {};
+
+    const total = await Order.countDocuments(filter);
+    const maxSkip = total ? total - 1 : 0;
+
+    const orders = await Order.find(filter)
+      .limit(limit > maxLimit ? maxLimit : limit)
+      .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip)
+      .populate('user', 'id firstName');
 
     if (!orders || orders.length === 0) {
       res.statusCode = 404;
@@ -172,6 +192,34 @@ const getOrders = async (req, res, next) => {
     next(error);
   }
 };
+
+// Optimize seearch
+// export const getOrders = async (req, res, next) => {
+//   try {
+//     const {
+//       limit  = 15,
+//       skip   = 0,
+//       search = '',
+//     } = req.query;
+
+//     const regex = new RegExp(search, 'i');          // case‑insensitive
+//     const base  = search ? { orderId: regex } : {}; // orderId ফিল্টার (ঐচ্ছিক)
+
+//     let orders = await Order.find(base)
+//       .limit(Math.min(+limit, 15))
+//       .skip(Math.max(+skip, 0))
+//       .populate({
+//         path  : 'user',
+//         select: 'id firstName',
+//         match : { firstName: regex },               // firstName ফিল্টার
+//       });
+
+//     if (search) orders = orders.filter(o => o.user); // user না‑ম্যাচ হলে বাদ
+
+//     if (!orders.length) return res.status(404).json({ message: 'Orders not found!' });
+//     res.json(orders);
+//   } catch (err) { next(err); }
+// };
 
 // GET /api/orders/last   (last oder view for order sucess page)
 const getLastOrder = async (req, res) => {
@@ -184,6 +232,23 @@ const getLastOrder = async (req, res) => {
   res.status(200).json(order[0]);
 };
 
+const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    console.log('orderId', orderId);
+
+    const deleted = await Order.findOneAndDelete(orderId);
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Order deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export {
   addOrderItems,
   getMyOrders,
@@ -192,4 +257,5 @@ export {
   updateOrderToDeliver,
   getOrders,
   getLastOrder,
+  deleteOrder,
 };
