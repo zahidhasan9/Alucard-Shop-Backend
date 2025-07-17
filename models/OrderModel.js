@@ -1,5 +1,17 @@
 import mongoose from 'mongoose';
 
+// Tracking sub-schema
+const trackingSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ['confirmed', 'pending', 'shipped', 'delivered'],
+    default: 'pending',
+    // required: true,
+  },
+  message: { type: String, required: true },
+  date: { type: Date, default: Date.now },
+});
+
 // Define the schema for orders
 const orderSchema = new mongoose.Schema(
   {
@@ -60,6 +72,7 @@ const orderSchema = new mongoose.Schema(
       default: 'pending',
     },
     deliveredAt: { type: Date },
+    tracking: [trackingSchema],
   },
   {
     // Include timestamps for createdAt and updatedAt
@@ -70,7 +83,6 @@ const orderSchema = new mongoose.Schema(
 // Create the Order model
 const Order = mongoose.model('Order', orderSchema);
 
-// Export the Order model
 export default Order;
 
 // import mongoose from 'mongoose';
