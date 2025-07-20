@@ -198,59 +198,19 @@ const getOrders = async (req, res, next) => {
   }
 };
 
-// @desc     Update order delivery status
-// @method   PUT
-// @endpoint /api/v1/orders/:id/delivery-status
-// @access   Private/Admin
-const updateOrderDeliveryStatus = async (req, res, next) => {
-  try {
-    const { id: orderId } = req.params;
-    const { status } = req.body;
-
-    const order = await Order.findById(orderId);
-
-    if (!order) {
-      res.status(404);
-      throw new Error('Order not found!');
-    }
-
-    // validate status
-    const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered'];
-    if (!validStatuses.includes(status)) {
-      res.status(400);
-      throw new Error('Invalid delivery status!');
-    }
-
-    order.deliveryStatus = status;
-
-    // If delivered, set deliveredAt
-    if (status === 'delivered') {
-      order.deliveredAt = new Date();
-    }
-
-    const updatedOrder = await order.save();
-
-    res.status(200).json(updatedOrder);
-  } catch (error) {
-    next(error);
-  }
-};
-
 const updateDeliveryStatus = async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const { orderId } = req.params;
     const { status } = req.body;
-
     const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid delivery status' });
     }
 
-    const order = await Order.findById(id);
+    const order = await Order.findOne({ orderId });
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
-
     // Prevent going backward in status
     const currentIndex = validStatuses.indexOf(order.Delivery);
     const newIndex = validStatuses.indexOf(status);
@@ -265,7 +225,6 @@ const updateDeliveryStatus = async (req, res, next) => {
       shipped: 'Your order has been shipped.',
       delivered: 'Your order has been delivered.',
     };
-
     // Check last tracking entry to avoid duplicates
     const lastTracking = order.tracking[order.tracking.length - 1];
 
@@ -286,6 +245,36 @@ const updateDeliveryStatus = async (req, res, next) => {
     const updatedOrder = await order.save();
 
     res.status(200).json(updatedOrder);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetDeliveryStatus = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findOne({ orderId });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Reset delivery-related fields
+    order.Delivery = 'pending';
+    order.deliveryStatus = 'pending'; // if you use this field
+    order.deliveredAt = null;
+    order.tracking = [
+      {
+        status: 'pending',
+        message: 'Order status has been reset to pending.',
+        date: new Date(),
+      },
+    ];
+
+    const updatedOrder = await order.save();
+
+    res.status(200).json({ message: 'Order status reset to pending.' });
   } catch (error) {
     next(error);
   }
@@ -356,6 +345,6 @@ export {
   getOrders,
   getLastOrder,
   deleteOrder,
-  updateOrderDeliveryStatus,
   updateDeliveryStatus,
+  resetDeliveryStatus,
 };

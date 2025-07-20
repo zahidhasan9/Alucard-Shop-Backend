@@ -8,8 +8,8 @@ import {
   getOrders,
   getLastOrder,
   deleteOrder,
-  updateOrderDeliveryStatus,
   updateDeliveryStatus,
+  resetDeliveryStatus,
 } from '../controllers/OrderControllers.js';
 
 import { protect, admin } from '../middlewares/authMiddleware.js';
@@ -24,6 +24,7 @@ router.get('/:orderId', protect, getOrderById); // Get single order by ID (Priva
 router.put('/:id/pay', protect, updateOrderToPaid); // Update order to paid (Private)
 router.put('/:id/deliver', protect, admin, updateOrderToDeliver); // Update order to delivered (Admin only)
 router.delete('/:orderId', protect, admin, deleteOrder);
-router.put('/:orderId', protect, updateOrderDeliveryStatus);
-router.put('/:id/delivery-status', protect, admin, updateDeliveryStatus);
+router.put('/:orderId/delivery-status', protect, admin, updateDeliveryStatus);
+router.put('/:orderId/reset-status', protect, admin, resetDeliveryStatus);
+
 export default router;

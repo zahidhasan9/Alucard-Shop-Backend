@@ -68,7 +68,7 @@ const orderSchema = new mongoose.Schema(
     // isDelivered: { type: Boolean, required: true, default: false },
     Delivery: {
       type: String,
-      enum: ['confirmed', 'pending', 'shipped'],
+      enum: ['confirmed', 'pending', 'shipped', 'delivered'],
       default: 'pending',
     },
     deliveredAt: { type: Date },
