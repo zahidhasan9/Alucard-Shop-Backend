@@ -43,7 +43,6 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
 app.use(morgan('dev'));
-app.use(limiter);
 app.use(passport.initialize());
 app.use(compression());
 
