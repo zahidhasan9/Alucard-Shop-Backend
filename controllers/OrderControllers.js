@@ -59,16 +59,43 @@ const addOrderItems = async (req, res, next) => {
 // @method   GET
 // @endpoint /api/v1/orders/my-orders
 // @access   Private
+// const getMyOrders = async (req, res, next) => {
+//   try {
+//     const orders = await Order.find({ user: req.user._id });
+
+//     if (!orders || orders.length === 0) {
+//       res.statusCode = 404;
+//       throw new Error('No orders found for the logged-in user.');
+//     }
+
+//     res.status(200).json(orders);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
 const getMyOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ user: req.user._id });
+    const userId = req.user._id;
 
-    if (!orders || orders.length === 0) {
-      res.statusCode = 404;
-      throw new Error('No orders found for the logged-in user.');
-    }
+    const [orders, totalOrders, pendingOrders, deliveredOrders, confirmedOrders, shippeddOrders] =
+      await Promise.all([
+        Order.find({ user: userId }).sort({ createdAt: -1 }),
+        Order.countDocuments({ user: userId }),
+        Order.countDocuments({ user: userId, Delivery: 'pending' }),
+        Order.countDocuments({ user: userId, Delivery: 'delivered' }),
+        Order.countDocuments({ user: userId, Delivery: 'confirmed' }),
+        Order.countDocuments({ user: userId, Delivery: 'shippedd' }),
+      ]);
 
-    res.status(200).json(orders);
+    res.status(200).json({
+      totalOrders,
+      pendingOrders,
+      deliveredOrders,
+      confirmedOrders,
+      shippeddOrders,
+      orders,
+    });
   } catch (error) {
     next(error);
   }

@@ -9,6 +9,7 @@ import {
   getTopProducts,
   getProductsByCategory,
   getFeaturedProducts,
+  getFlashsellProducts,
 } from '../controllers/ProductController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 import upload from '../middlewares/upload.js';
@@ -20,6 +21,7 @@ const router = express.Router();
 router.post('/add', upload.array('images', 6), protect, createProduct);
 router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);
+router.get('/flashsell', getFlashsellProducts);
 router.get('/top', getTopProducts);
 router.get('/:slug', getProduct);
 router.delete('/:id', deleteProduct);
