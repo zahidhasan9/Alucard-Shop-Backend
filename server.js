@@ -25,7 +25,11 @@ connectDB(); // Connect to MongoDB
 const app = express();
 
 // Essential Middlewares
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'app-fury-2k25.netlify.app',
+];
 app.use(
   cors({
     origin: (origin, callback) => {
