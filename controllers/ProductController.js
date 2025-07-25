@@ -245,8 +245,19 @@ const getProduct = async (req, res, next) => {
 
 const updateProduct = async (req, res, next) => {
   try {
-    const { name, description, brand, category, price, oldPrice, countInStock, variants, details } =
-      req.body;
+    const {
+      name,
+      description,
+      brand,
+      category,
+      price,
+      oldPrice,
+      countInStock,
+      variants,
+      details,
+      isFeatured,
+      flash_sell,
+    } = req.body;
     let imageUrls = []; // initialize to empty array
     const { slug } = req.params;
     const product = await Product.findOne({ slug });
@@ -290,6 +301,8 @@ const updateProduct = async (req, res, next) => {
     product.countInStock = countInStock || product.countInStock;
     product.variants = variants || product.variants;
     product.details = details || product.details;
+    product.isFeatured = isFeatured || product.isFeatured;
+    product.flash_sell = flash_sell || product.flash_sell;
     // Update image URLs only if new images are uploaded
     if (imageUrls.length > 0) {
       product.thumbnail = imageUrls[0]; // First image as thumbnail
@@ -415,6 +428,26 @@ const getProductsByCategory = async (req, res) => {
   }
 };
 
+// Get featured products
+const getFeaturedProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ isFeatured: true }).limit(8);
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch featured products', error });
+  }
+};
+
+// Get featured products
+const getFlashsellProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ flash_sell: true }).limit(8);
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch featured products', error });
+  }
+};
+
 export {
   getProducts,
   getProduct,
@@ -424,4 +457,6 @@ export {
   createProductReview,
   getTopProducts,
   getProductsByCategory,
+  getFeaturedProducts,
+  getFlashsellProducts,
 };
