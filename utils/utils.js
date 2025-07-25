@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import nodemailer from 'nodemailer';
 
 ///HashPassword
-export const generateHashPassword = async (password) => {
+export const generateHashPassword = async password => {
   const salt = await bcrypt.genSalt(10);
 
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -18,7 +18,7 @@ export const verifyPassword = async (currentPassword, storedPassword) => {
 };
 
 //email verify
-export const verifyEmail = (email) => {
+export const verifyEmail = email => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
@@ -72,6 +72,6 @@ export const checkOTP = (email, userProvidedOtp) => {
   }
 };
 
-export const removeFile = (filePath) => {
+export const removeFile = filePath => {
   fs.unlinkSync(filePath);
 };
