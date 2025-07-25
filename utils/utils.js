@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import fs from 'node:fs';
 import nodemailer from 'nodemailer';
 

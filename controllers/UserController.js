@@ -1,5 +1,6 @@
 import User from '../models/UserModel.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
+
 import jwt from 'jsonwebtoken';
 import { verifyEmail, generateHashPassword, verifyPassword } from '../utils/utils.js';
 import { generateToken, verifyToken } from '../utils/generateToken.js';
