@@ -28,7 +28,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://app-fury-2k25.netlify.app/',
+  'https://app-fury-2k25.netlify.app',
 ];
 app.use(
   cors({
