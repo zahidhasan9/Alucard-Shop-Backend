@@ -67,7 +67,11 @@ const productSchema = new mongoose.Schema(
     },
     flash_sell: {
       type: Boolean,
-      required: false,
+      default: false,
+    },
+    isFeatured: {
+      type: Boolean,
+      default: false,
     },
     // Quantity available in stock
     countInStock: {
