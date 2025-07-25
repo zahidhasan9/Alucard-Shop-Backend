@@ -1,4 +1,5 @@
 import Product from '../models/ProductModel.js';
+import Brand from '../models/BrandModel.js';
 import Category from '../models/CategoryModel.js';
 import { deleteImage } from '../utils/imageHandler.js';
 import slugify from 'slugify';
@@ -126,7 +127,6 @@ const createProduct = async (req, res) => {
 //     next(error);
 //   }
 // };
-
 const getProducts = async (req, res, next) => {
   try {
     const total = await Product.countDocuments();
@@ -135,9 +135,8 @@ const getProducts = async (req, res, next) => {
 
     const limit = Number(req.query.limit) || maxLimit;
     const skip = Number(req.query.skip) || 0;
-    const search = req.query.search || '';
+    const search = req.query.search?.trim() || '';
 
-    // Filtering params
     const category = req.query.category;
     const brand = req.query.brand;
     const minPrice = Number(req.query.minPrice) || 0;
@@ -151,39 +150,67 @@ const getProducts = async (req, res, next) => {
     else if (sortBy === 'price_desc') sortOption = { price: -1 };
     else if (sortBy === 'popularity') sortOption = { rating: -1 };
 
-    // Building filter object
+    // Base filter
     const filter = {
-      // name: { $regex: search, $options: 'i' }, // for search by name
-      price: { $gte: minPrice, $lte: maxPrice }, // price range
-      rating: { $gte: minRating }, // minimum rating
+      price: { $gte: minPrice, $lte: maxPrice },
+      rating: { $gte: minRating },
     };
-    // Keyword search on name, category, or brand
+
+    //  Handle search in name, and lookup brand/category ObjectIds by name
     if (search) {
-      // Category name match categoryIds
       const matchedCategories = await Category.find({
         name: { $regex: search, $options: 'i' },
       });
-      const categoryIds = matchedCategories.map(cat => cat._id);
 
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } },
-        { category: { $in: categoryIds } }, // ✅ now this works
-      ];
+      const matchedBrands = await Brand.find({
+        name: { $regex: search, $options: 'i' },
+      });
+
+      const categoryIds = matchedCategories.map(c => c._id);
+      const brandIds = matchedBrands.map(b => b._id);
+
+      filter.$or = [{ name: { $regex: search, $options: 'i' } }];
+
+      if (categoryIds.length > 0) {
+        filter.$or.push({ category: { $in: categoryIds } });
+      }
+
+      if (brandIds.length > 0) {
+        filter.$or.push({ brand: { $in: brandIds } });
+      }
     }
 
-    if (category) filter.category = category;
-    if (brand) filter.brand = brand;
+    // Filter by category param
+    if (category) {
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { category }];
+        delete filter.$or;
+      } else {
+        filter.category = category;
+      }
+    }
+
+    // Filter by brand param
+    if (brand) {
+      if (filter.$and) {
+        filter.$and.push({ brand });
+      } else if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { brand }];
+        delete filter.$or;
+      } else {
+        filter.brand = brand;
+      }
+    }
 
     const products = await Product.find(filter)
-      .sort(sortOption) // <--  sort apply
-      .limit(limit > maxLimit ? maxLimit : limit)
-      .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip)
-      .populate('category', 'name');
+      .sort(sortOption)
+      .limit(Math.min(limit, maxLimit))
+      .skip(Math.min(Math.max(skip, 0), maxSkip))
+      .populate('category', 'name')
+      .populate('brand', 'name'); // Populate brand name too
 
     if (!products || products.length === 0) {
-      res.statusCode = 404;
-      throw new Error('Products not found!');
+      return res.status(404).json({ message: 'Products not found!' });
     }
 
     res.status(200).json({
@@ -194,9 +221,11 @@ const getProducts = async (req, res, next) => {
       filterUsed: filter,
     });
   } catch (error) {
+    console.error('🔥 ERROR in getProducts:', error.message);
     next(error);
   }
 };
+
 // @desc     Fetch top products
 // @method   GET
 // @endpoint /api/v1/products/top
@@ -431,7 +460,10 @@ const getProductsByCategory = async (req, res) => {
 // Get featured products
 const getFeaturedProducts = async (req, res) => {
   try {
-    const products = await Product.find({ isFeatured: true }).limit(8);
+    const products = await Product.find({ isFeatured: true })
+      .limit(8)
+      .populate('brand', 'name')
+      .populate('category', 'name');
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch featured products', error });
@@ -441,7 +473,10 @@ const getFeaturedProducts = async (req, res) => {
 // Get featured products
 const getFlashsellProducts = async (req, res) => {
   try {
-    const products = await Product.find({ flash_sell: true }).limit(8);
+    const products = await Product.find({ flash_sell: true })
+      .limit(8)
+      .populate('brand', 'name')
+      .populate('category', 'name');
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch featured products', error });

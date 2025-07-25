@@ -125,7 +125,7 @@ const sessionUser = async (req, res) => {
 const logoutUser = (req, res) => {
   const { token } = req.cookies;
   if (!token) {
-    res.json({ message: 'tocken empty' });
+    res.json({ message: 'token empty' });
   }
   res.cookie('token', '', { httpOnly: true, expires: new Date(0) });
   res.json({ message: 'Logged out successfully!' });
