@@ -1,4 +1,3 @@
-// models/Cart.js
 import mongoose from 'mongoose';
 
 const cartItemSchema = new mongoose.Schema({
@@ -7,7 +6,9 @@ const cartItemSchema = new mongoose.Schema({
   price: Number,
   image: String,
   slug: String,
-  quantity: { type: Number, default: 1 },
+  variantId: { type: mongoose.Schema.Types.ObjectId },
+  variantLabel: String,
+  quantity: { type: Number, default: 1, min: 1 },
 });
 
 const cartSchema = new mongoose.Schema(

@@ -19,6 +19,12 @@ import ReviewRoutes from './routes/ReviewRoutes.js';
 import CartRoutes from './routes/CartRoutes.js';
 import OrderRoutes from './routes/OrderRoutes.js';
 
+import CouponRoutes from './routes/CouponRoutes.js';
+import WishlistRoutes from './routes/WishlistRoutes.js';
+import QuestionRoutes from './routes/QuestionRoutes.js';
+import ReturnRequestRoutes from './routes/ReturnRequestRoutes.js';
+
+
 import passport from 'passport';
 connectDB(); // Connect to MongoDB
 
@@ -62,6 +68,10 @@ app.use('/api/brand', BrandRoutes);
 app.use('/api/review', ReviewRoutes);
 app.use('/api/cart', CartRoutes);
 app.use('/api/order', OrderRoutes);
+app.use('/api/coupon', CouponRoutes);
+app.use('/api/wishlist', WishlistRoutes);
+app.use('/api/question', QuestionRoutes);
+app.use('/api/return-request', ReturnRequestRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.get('/', (req, res) => {

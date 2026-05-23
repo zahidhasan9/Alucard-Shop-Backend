@@ -1,38 +1,36 @@
-const User = require('../models/user.model');
+import Wishlist from '../models/WishlistModel.js';
 
-const addToWishlist = async (req, res) => {
-  const { productId } = req.params;
-  const user = await User.findById(req.user._id);
+export const getWishlist = async (req, res) => {
+  const wishlist = await Wishlist.findOne({ user: req.user._id }).populate({
+    path: 'products',
+    populate: [
+      { path: 'category', select: 'name slug' },
+      { path: 'brand', select: 'name slug' },
+    ],
+  });
+  res.json({ success: true, products: wishlist?.products || [] });
+};
 
-  // Convert ObjectId to string for comparison
-  const alreadyInWishlist = user.wishlist.map(id => id.toString()).includes(productId);
+export const toggleWishlist = async (req, res) => {
+  const { productId } = req.body;
+  if (!productId) return res.status(400).json({ message: 'productId is required.' });
 
-  if (alreadyInWishlist) {
-    return res.status(400).json({
-      success: false,
-      message: 'Product is already in wishlist',
-    });
+  let wishlist = await Wishlist.findOne({ user: req.user._id });
+  if (!wishlist) wishlist = await Wishlist.create({ user: req.user._id, products: [] });
+
+  const exists = wishlist.products.some(id => id.toString() === productId);
+  if (exists) {
+    wishlist.products = wishlist.products.filter(id => id.toString() !== productId);
+  } else {
+    wishlist.products.push(productId);
   }
 
-  user.wishlist.push(productId);
-  await user.save();
-
-  res.status(200).json({ success: true, wishlist: user.wishlist });
+  await wishlist.save();
+  await wishlist.populate('products');
+  res.json({ success: true, added: !exists, products: wishlist.products });
 };
 
-const removeFromWishlist = async (req, res) => {
-  const { productId } = req.params;
-  const user = await User.findById(req.user._id);
-
-  user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
-  await user.save();
-
-  res.status(200).json({ success: true, wishlist: user.wishlist });
+export const clearWishlist = async (req, res) => {
+  await Wishlist.findOneAndUpdate({ user: req.user._id }, { products: [] }, { upsert: true });
+  res.json({ success: true, message: 'Wishlist cleared.' });
 };
-
-const getWishlist = async (req, res) => {
-  const user = await User.findById(req.user._id).populate('wishlist');
-  res.status(200).json({ success: true, wishlist: user.wishlist });
-};
-
-export { addToWishlist, getWishlist, removeFromWishlist };

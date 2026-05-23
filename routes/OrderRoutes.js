@@ -1,3 +1,38 @@
+// import express from 'express';
+// import {
+//   addOrderItems,
+//   getMyOrders,
+//   getOrderById,
+//   updateOrderToPaid,
+//   updateOrderToDeliver,
+//   getOrders,
+//   getLastOrder,
+//   deleteOrder,
+//   updateDeliveryStatus,
+//   resetDeliveryStatus,
+//   submitManualPayment,
+//   verifyManualPayment,
+// } from '../controllers/OrderControllers.js';
+// import { protect, admin } from '../middlewares/authMiddleware.js';
+
+// const router = express.Router();
+
+// router.post('/', protect, addOrderItems);
+// router.get('/my-orders', protect, getMyOrders);
+// router.get('/last-orders', protect, getLastOrder);
+// router.get('/', protect, admin, getOrders);
+// router.get('/:orderId', protect, getOrderById);
+// router.put('/:id/pay', protect, updateOrderToPaid);
+// router.put('/:orderId/manual-payment', protect, submitManualPayment);
+// router.put('/:orderId/verify-payment', protect, admin, verifyManualPayment);
+// router.put('/:id/deliver', protect, admin, updateOrderToDeliver);
+// router.delete('/:orderId', protect, admin, deleteOrder);
+// router.put('/:orderId/delivery-status', protect, admin, updateDeliveryStatus);
+// router.put('/:orderId/reset-status', protect, admin, resetDeliveryStatus);
+
+// export default router;
+
+
 import express from 'express';
 import {
   addOrderItems,
@@ -10,19 +45,22 @@ import {
   deleteOrder,
   updateDeliveryStatus,
   resetDeliveryStatus,
+  
+  
 } from '../controllers/OrderControllers.js';
-
 import { protect, admin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', protect, addOrderItems); // Create new order (Private)
-router.get('/my-orders', protect, getMyOrders); // Get current user's orders (Private)
-router.get('/last-orders', protect, getLastOrder); // Get current user's orders (Private)
-router.get('/', protect, admin, getOrders); // Get all orders (Admin only)
-router.get('/:orderId', protect, getOrderById); // Get single order by ID (Private)
-router.put('/:id/pay', protect, updateOrderToPaid); // Update order to paid (Private)
-router.put('/:id/deliver', protect, admin, updateOrderToDeliver); // Update order to delivered (Admin only)
+router.post('/', protect, addOrderItems);
+router.get('/my-orders', protect, getMyOrders);
+router.get('/last-orders', protect, getLastOrder);
+router.get('/', protect, admin, getOrders);
+router.get('/:orderId', protect, getOrderById);
+router.put('/:id/pay', protect, updateOrderToPaid);
+// router.put('/:orderId/manual-payment', protect, submitManualPayment);
+// router.put('/:orderId/verify-payment', protect, admin, verifyManualPayment);
+router.put('/:id/deliver', protect, admin, updateOrderToDeliver);
 router.delete('/:orderId', protect, admin, deleteOrder);
 router.put('/:orderId/delivery-status', protect, admin, updateDeliveryStatus);
 router.put('/:orderId/reset-status', protect, admin, resetDeliveryStatus);
