@@ -357,6 +357,10 @@ const addOrderItems = async (req, res) => {
       taxPrice = 0,
       shippingPrice = 0,
       couponCode = '',
+      manualPayment,
+      coupon,
+      discountPrice = 0,
+      originalShippingPrice,
     } = req.body;
 
     if (!cartItems || cartItems.length === 0) {
@@ -412,7 +416,21 @@ const addOrderItems = async (req, res) => {
       discountPrice: pricing.discountPrice,
       totalPrice: pricing.totalPrice + Number(taxPrice || 0),
       tracking,
-    });
+      manualPayment:
+          paymentMethod?.method === 'manual'
+            ? {
+                provider: manualPayment?.provider,
+                senderNumber: manualPayment?.senderNumber,
+                transactionId: manualPayment?.transactionId,
+                amount: manualPayment?.amount,
+                status: 'submitted',
+              }
+            : undefined,
+
+      coupon: coupon || undefined,
+      discountPrice: Number(discountPrice || 0),
+      originalShippingPrice: Number(originalShippingPrice || shippingPrice || 0),
+          });
 
     const createdOrder = await order.save();
 
