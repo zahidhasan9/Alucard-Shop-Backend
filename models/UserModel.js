@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  lastLogin: {
+  type: Date,
+  default: null,
+},
   addresses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Address' }],
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
   createdAt: {

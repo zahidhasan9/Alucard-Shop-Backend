@@ -609,6 +609,18 @@ const addOrderItems = async (req, res) => {
 
     createdOrder = await order.save();
 
+    if (shippingAddress?.phone) {
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $set: {
+            phone: shippingAddress.phone,
+          },
+        },
+        { new: true }
+      );
+    }
+
     try {
       await reduceStockUpdates(pricing.stockUpdates);
     } catch (stockError) {
@@ -819,6 +831,63 @@ const getOrders = async (req, res) => {
   }
 };
 
+// const updateDeliveryStatus = async (req, res) => {
+
+//   try {
+//     const { orderId } = req.params;
+//     const { status } = req.body;
+
+//     const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered'];
+
+//     if (!validStatuses.includes(status)) {
+//       return res.status(400).json({ message: 'Invalid delivery status' });
+//     }
+
+//     const order = await Order.findOne({ orderId });
+
+//     if (!order) {
+//       return res.status(404).json({ message: 'Order not found' });
+//     }
+
+//     const currentIndex = validStatuses.indexOf(order.Delivery);
+//     const newIndex = validStatuses.indexOf(status);
+
+//     if (newIndex < currentIndex) {
+//       return res.status(400).json({ message: 'Cannot update to previous status' });
+//     }
+
+//     const messages = {
+//       pending: 'Your order is now pending.',
+//       confirmed: 'Your order has been confirmed.',
+//       shipped: 'Your order has been shipped.',
+//       delivered: 'Your order has been delivered.',
+//     };
+
+//     const lastTracking = order.tracking[order.tracking.length - 1];
+
+//     if (!lastTracking || lastTracking.status !== status) {
+//       order.tracking.push({
+//         status,
+//         message: messages[status],
+//         date: new Date(),
+//       });
+//     }
+
+//     order.Delivery = status;
+
+//     if (status === 'delivered') {
+//       order.deliveredAt = new Date();
+//     }
+
+//     const updatedOrder = await order.save();
+
+//     res.status(200).json(updatedOrder);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message || 'Status update failed' });
+//   }
+// };
+
+
 const updateDeliveryStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -827,20 +896,26 @@ const updateDeliveryStatus = async (req, res) => {
     const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered'];
 
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid delivery status' });
+      return res.status(400).json({
+        message: 'Invalid delivery status',
+      });
     }
 
-    const order = await Order.findOne({ orderId });
+    const order = await findOrderByAnyId(orderId);
 
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({
+        message: 'Order not found',
+      });
     }
 
     const currentIndex = validStatuses.indexOf(order.Delivery);
     const newIndex = validStatuses.indexOf(status);
 
     if (newIndex < currentIndex) {
-      return res.status(400).json({ message: 'Cannot update to previous status' });
+      return res.status(400).json({
+        message: 'Cannot update to previous status. Please reset status first.',
+      });
     }
 
     const messages = {
@@ -850,7 +925,7 @@ const updateDeliveryStatus = async (req, res) => {
       delivered: 'Your order has been delivered.',
     };
 
-    const lastTracking = order.tracking[order.tracking.length - 1];
+    const lastTracking = order.tracking?.[order.tracking.length - 1];
 
     if (!lastTracking || lastTracking.status !== status) {
       order.tracking.push({
@@ -864,29 +939,65 @@ const updateDeliveryStatus = async (req, res) => {
 
     if (status === 'delivered') {
       order.deliveredAt = new Date();
+    } else {
+      order.deliveredAt = null;
     }
 
     const updatedOrder = await order.save();
 
     res.status(200).json(updatedOrder);
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Status update failed' });
+    res.status(500).json({
+      message: error.message || 'Status update failed',
+    });
   }
 };
+
+
+// const resetDeliveryStatus = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+
+//     const order = await Order.findOne({ orderId });
+
+//     if (!order) {
+//       return res.status(404).json({ message: 'Order not found' });
+//     }
+
+//     order.Delivery = 'pending';
+//     order.deliveredAt = null;
+
+//     order.tracking = [
+//       {
+//         status: 'pending',
+//         message: 'Order status has been reset to pending.',
+//         date: new Date(),
+//       },
+//     ];
+
+//     await order.save();
+
+//     res.status(200).json({ message: 'Order status reset to pending.' });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message || 'Status reset failed' });
+//   }
+// };
+
 
 const resetDeliveryStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findOne({ orderId });
+    const order = await findOrderByAnyId(orderId);
 
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({
+        message: 'Order not found',
+      });
     }
 
     order.Delivery = 'pending';
     order.deliveredAt = null;
-
     order.tracking = [
       {
         status: 'pending',
@@ -895,11 +1006,16 @@ const resetDeliveryStatus = async (req, res) => {
       },
     ];
 
-    await order.save();
+    const updatedOrder = await order.save();
 
-    res.status(200).json({ message: 'Order status reset to pending.' });
+    res.status(200).json({
+      message: 'Order status reset to pending.',
+      order: updatedOrder,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Status reset failed' });
+    res.status(500).json({
+      message: error.message || 'Status reset failed',
+    });
   }
 };
 
@@ -942,6 +1058,104 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+
+
+
+const findOrderByAnyId = async (orderId) => {
+  let order = await Order.findOne({ orderId });
+
+  if (!order && mongoose.Types.ObjectId.isValid(orderId)) {
+    order = await Order.findById(orderId);
+  }
+
+  return order;
+};
+
+const updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, transactionId = '', adminNote = '' } = req.body;
+
+    const validStatuses = ['pending', 'submitted', 'paid', 'failed'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid payment status',
+      });
+    }
+
+    const order = await findOrderByAnyId(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        message: 'Order not found',
+      });
+    }
+
+    if (!order.paymentMethod) {
+      order.paymentMethod = {};
+    }
+
+    order.paymentMethod.status = status;
+
+    if (transactionId) {
+      order.paymentMethod.transactionId = transactionId;
+    }
+
+    if (status === 'paid') {
+      const paidDate = new Date();
+
+      order.isPaid = true;
+      order.paidAt = paidDate;
+      order.paymentMethod.paidAt = paidDate;
+
+      order.paymentResult = {
+        id: transactionId || order.paymentMethod.transactionId || order.orderId,
+        status: 'paid',
+        update_time: paidDate.toISOString(),
+        email_address: order.shippingAddress?.email || '',
+      };
+
+      if (order.manualPayment) {
+        order.manualPayment.status = 'verified';
+      }
+    } else {
+      order.isPaid = false;
+      order.paidAt = null;
+      order.paymentMethod.paidAt = null;
+
+      order.paymentResult = {
+        ...(order.paymentResult || {}),
+        status,
+        update_time: new Date().toISOString(),
+      };
+
+      if (order.manualPayment) {
+        if (status === 'submitted') order.manualPayment.status = 'submitted';
+        if (status === 'failed') order.manualPayment.status = 'rejected';
+        if (status === 'pending') order.manualPayment.status = 'submitted';
+      }
+    }
+
+    if (order.manualPayment && adminNote) {
+      order.manualPayment.adminNote = adminNote;
+    }
+
+    const updatedOrder = await order.save();
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message || 'Payment status update failed',
+    });
+  }
+};
+
+
+
+
+
+
 export {
   addOrderItems,
   getMyOrders,
@@ -953,4 +1167,6 @@ export {
   deleteOrder,
   updateDeliveryStatus,
   resetDeliveryStatus,
+  updatePaymentStatus,
+  
 };

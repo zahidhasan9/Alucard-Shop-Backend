@@ -45,6 +45,7 @@ import {
   deleteOrder,
   updateDeliveryStatus,
   resetDeliveryStatus,
+  updatePaymentStatus
   
   
 } from '../controllers/OrderControllers.js';
@@ -58,6 +59,7 @@ router.get('/last-orders', protect, getLastOrder);
 router.get('/', protect, admin, getOrders);
 router.get('/:orderId', protect, getOrderById);
 router.put('/:id/pay', protect, updateOrderToPaid);
+router.put('/:orderId/payment-status', protect, admin, updatePaymentStatus);
 // router.put('/:orderId/manual-payment', protect, submitManualPayment);
 // router.put('/:orderId/verify-payment', protect, admin, verifyManualPayment);
 router.put('/:id/deliver', protect, admin, updateOrderToDeliver);
