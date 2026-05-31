@@ -1,5 +1,6 @@
 
 
+
 // import mongoose from 'mongoose';
 
 // const trackingSchema = new mongoose.Schema({
@@ -82,6 +83,38 @@
 //   { _id: false }
 // );
 
+// const manualPaymentSchema = new mongoose.Schema(
+//   {
+//     provider: {
+//       type: String,
+//       enum: ['bkash', 'nagad', 'rocket'],
+//     },
+//     senderNumber: {
+//       type: String,
+//       trim: true,
+//     },
+//     transactionId: {
+//       type: String,
+//       trim: true,
+//     },
+//     amount: {
+//       type: Number,
+//       default: 0,
+//     },
+//     submittedAt: {
+//       type: Date,
+//       default: Date.now,
+//     },
+//     status: {
+//       type: String,
+//       enum: ['submitted', 'verified', 'rejected'],
+//       default: 'submitted',
+//     },
+//     adminNote: String,
+//   },
+//   { _id: false }
+// );
+
 // const orderSchema = new mongoose.Schema(
 //   {
 //     user: {
@@ -135,6 +168,8 @@
 //       paidAt: Date,
 //     },
 
+//     manualPayment: manualPaymentSchema,
+
 //     paymentResult: {
 //       id: String,
 //       status: String,
@@ -149,24 +184,29 @@
 //       required: true,
 //       default: 0,
 //     },
+
 //     taxPrice: {
 //       type: Number,
 //       required: true,
 //       default: 0,
 //     },
+
 //     shippingPrice: {
 //       type: Number,
 //       required: true,
 //       default: 0,
 //     },
+
 //     originalShippingPrice: {
 //       type: Number,
 //       default: 0,
 //     },
+
 //     discountPrice: {
 //       type: Number,
 //       default: 0,
 //     },
+
 //     totalPrice: {
 //       type: Number,
 //       required: true,
@@ -178,6 +218,7 @@
 //       required: true,
 //       default: false,
 //     },
+
 //     paidAt: Date,
 
 //     Delivery: {
@@ -198,6 +239,26 @@
 // export default Order;
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import mongoose from 'mongoose';
 
 const trackingSchema = new mongoose.Schema({
@@ -206,10 +267,12 @@ const trackingSchema = new mongoose.Schema({
     enum: ['confirmed', 'pending', 'shipped', 'delivered'],
     default: 'pending',
   },
+
   message: {
     type: String,
     required: true,
   },
+
   date: {
     type: Date,
     default: Date.now,
@@ -221,29 +284,53 @@ const orderItemSchema = new mongoose.Schema(
     product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
+      required: true,
     },
+
     name: {
       type: String,
       required: true,
+      trim: true,
     },
+
     qty: {
       type: Number,
       required: true,
       min: 1,
     },
+
     image: {
       type: String,
-      required: true,
+      default: '',
+      trim: true,
     },
+
     price: {
       type: Number,
       required: true,
       min: 0,
     },
+
     slug: {
       type: String,
-      required: true,
+      default: '',
+      trim: true,
     },
+
+    variantId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
+
+    variantLabel: {
+      type: String,
+      trim: true,
+    },
+
+    variantSku: {
+      type: String,
+      trim: true,
+    },
+
     selectedVariants: {
       type: Map,
       of: String,
@@ -260,18 +347,22 @@ const couponSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
+
     type: {
       type: String,
       enum: ['percent', 'fixed', 'shipping'],
     },
+
     value: {
       type: Number,
       default: 0,
     },
+
     discountPrice: {
       type: Number,
       default: 0,
     },
+
     shippingDiscount: {
       type: Number,
       default: 0,
@@ -284,29 +375,36 @@ const manualPaymentSchema = new mongoose.Schema(
   {
     provider: {
       type: String,
-      enum: ['bkash', 'nagad', 'rocket'],
+      enum: ['manual', 'bkash', 'nagad', 'rocket'],
+      default: 'manual',
     },
+
     senderNumber: {
       type: String,
       trim: true,
     },
+
     transactionId: {
       type: String,
       trim: true,
     },
+
     amount: {
       type: Number,
       default: 0,
     },
+
     submittedAt: {
       type: Date,
       default: Date.now,
     },
+
     status: {
       type: String,
       enum: ['submitted', 'verified', 'rejected'],
       default: 'submitted',
     },
+
     adminNote: String,
   },
   { _id: false }
@@ -332,18 +430,22 @@ const orderSchema = new mongoose.Schema(
       fullName: String,
       phone: String,
       email: String,
+
       address: {
         type: String,
         required: true,
       },
+
       city: {
         type: String,
         required: true,
       },
+
       postalCode: {
         type: String,
         required: true,
       },
+
       division: {
         type: String,
         required: true,
@@ -356,11 +458,13 @@ const orderSchema = new mongoose.Schema(
         enum: ['cod', 'manual', 'online', 'stripe', 'sslcommerz'],
         default: 'cod',
       },
+
       status: {
         type: String,
         enum: ['pending', 'submitted', 'paid', 'failed'],
         default: 'pending',
       },
+
       transactionId: String,
       paidAt: Date,
     },
