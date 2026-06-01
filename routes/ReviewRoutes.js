@@ -36,6 +36,7 @@ import {
   replyToReview,
   deleteReviewReply,
   deleteReview,
+  getFeaturedReviews,
 } from '../controllers/ReviewController.js';
 import { protect, admin } from '../middlewares/authMiddleware.js';
 
@@ -47,6 +48,7 @@ router.patch('/admin/:reviewId/status', protect, admin, updateReviewStatus);
 router.post('/admin/:reviewId/reply', protect, admin, replyToReview);
 router.delete('/admin/:reviewId/reply', protect, admin, deleteReviewReply);
 router.delete('/admin/:reviewId', protect, admin, deleteReview);
+router.get('/featured', getFeaturedReviews);
 
 router.post('/', protect, createReview);
 router.get('/user', protect, getUserAllReviews);

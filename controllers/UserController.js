@@ -392,7 +392,22 @@ const updateUser = async (req, res, next) => {
 // @access   Private
 const updateUserProfile = async (req, res, next) => {
   try {
-    const { firstName, lastName, email, phone, password } = req.body;
+    const {
+      firstName,
+      lastName,
+      phone,
+      address,
+      country,
+      dateOfBirth,
+      gender,
+      skills,
+      profession,
+      companyName,
+      companyWebsite,
+      bio,
+      socials,
+    } = req.body;
+
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -400,30 +415,50 @@ const updateUserProfile = async (req, res, next) => {
       throw new Error('User not found. Unable to update profile.');
     }
 
-    user.firstName = firstName || user.firstName;
-    user.lastName = lastName || user.lastName;
-    user.email = email || user.email;
-    user.phone = phone || user.phone;
+    user.firstName = firstName ?? user.firstName;
+    user.lastName = lastName ?? user.lastName;
+    user.phone = phone ?? user.phone;
+    user.address = address ?? user.address;
+    user.country = country ?? user.country;
+    user.dateOfBirth = dateOfBirth || user.dateOfBirth;
+    user.gender = gender ?? user.gender;
+    user.skills = skills ?? user.skills;
+    user.profession = profession ?? user.profession;
+    user.companyName = companyName ?? user.companyName;
+    user.companyWebsite = companyWebsite ?? user.companyWebsite;
+    user.bio = bio ?? user.bio;
 
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
-    }
+    user.socials = {
+      facebook: socials?.facebook ?? user.socials?.facebook ?? '',
+      x: socials?.x ?? user.socials?.x ?? '',
+      linkedin: socials?.linkedin ?? user.socials?.linkedin ?? '',
+      youtube: socials?.youtube ?? user.socials?.youtube ?? '',
+    };
 
     const updatedUser = await user.save();
 
     res.status(200).json({
-  message: 'User profile updated successfully.',
-  user: {
-    id: updatedUser._id,
-    firstName: updatedUser.firstName,
-    lastName: updatedUser.lastName,
-    email: updatedUser.email,
-    phone: updatedUser.phone || '',
-    role: updatedUser.role,
-    isActive: updatedUser.isActive,
-  },
-});
+      message: 'User profile updated successfully.',
+      user: {
+        id: updatedUser._id,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        phone: updatedUser.phone || '',
+        address: updatedUser.address || '',
+        country: updatedUser.country || '',
+        dateOfBirth: updatedUser.dateOfBirth,
+        gender: updatedUser.gender || '',
+        skills: updatedUser.skills || '',
+        profession: updatedUser.profession || '',
+        companyName: updatedUser.companyName || '',
+        companyWebsite: updatedUser.companyWebsite || '',
+        bio: updatedUser.bio || '',
+        socials: updatedUser.socials || {},
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -1027,20 +1062,30 @@ const resetPasswordRequest = async (req, res, next) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: '15m',
     });
-    const passwordResetLink = `http://localhost:5173/reset-password/${user._id}/${token}`;
+
+    const clientUrl =
+      process.env.ADMIN_CLIENT_URL ||
+      process.env.CLIENT_URL ||
+      'http://localhost:5173';
+
+    const passwordResetLink = `${clientUrl}/authentication/reset-password/${user._id}/${token}`;
+
+
+
+    // const passwordResetLink = `http://localhost:5173/reset-password/${user._id}/${token}`;
     // console.log(passwordResetLink);
     // res.json({token:passwordResetLink})
     await transporter.sendMail({
       from: `"MERN Shop" ${process.env.EMAIL_FROM}`, // sender address
       to: user.email, // list of receivers
-      subject: 'Password Reset -ZOTAC FURY', // Subject line
+      subject: 'Password Reset -Alucard Shop', // Subject line
       html: `
      <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Password Reset - ZOTAC FURY</title>
+  <title>Password Reset - Alucard Shop</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;">
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; margin: 32px auto;">
@@ -1049,7 +1094,7 @@ const resetPasswordRequest = async (req, res, next) => {
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
           <tr>
             <td style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #1a1a1a; font-size: 28px; font-weight: 700; margin: 0;">ZOTAC FURY</h1>
+              <h1 style="color: #1a1a1a; font-size: 28px; font-weight: 700; margin: 0;">Alucard Shop</h1>
               <p style="color: #555; font-size: 14px; margin: 8px 0 0;">Password Reset Request</p>
             </td>
           </tr>
@@ -1086,7 +1131,7 @@ const resetPasswordRequest = async (req, res, next) => {
                 If you didn’t request a password reset, please ignore this email. Your account remains secure.
               </p>
               <p style="font-size: 14px; color: #333; line-height: 1.6; text-align: center; margin: 0;">
-                Warm regards,<br><strong>The ZOTAC FURY Team</strong>
+                Warm regards,<br><strong>The Alucard Shop Team</strong>
               </p>
             </td>
           </tr>

@@ -43,6 +43,56 @@ const userSchema = new mongoose.Schema({
 },
   addresses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Address' }],
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+  address: {
+  type: String,
+  trim: true,
+  default: '',
+},
+country: {
+  type: String,
+  trim: true,
+  default: '',
+},
+dateOfBirth: {
+  type: Date,
+  default: null,
+},
+gender: {
+  type: String,
+  trim: true,
+  default: '',
+},
+skills: {
+  type: String,
+  trim: true,
+  default: '',
+},
+profession: {
+  type: String,
+  trim: true,
+  default: '',
+},
+companyName: {
+  type: String,
+  trim: true,
+  default: '',
+},
+companyWebsite: {
+  type: String,
+  trim: true,
+  default: '',
+},
+bio: {
+  type: String,
+  trim: true,
+  default: '',
+},
+socials: {
+  facebook: { type: String, trim: true, default: '' },
+  x: { type: String, trim: true, default: '' },
+  linkedin: { type: String, trim: true, default: '' },
+  youtube: { type: String, trim: true, default: '' },
+},
   createdAt: {
     type: Date,
     default: Date.now,

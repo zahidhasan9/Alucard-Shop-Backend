@@ -591,3 +591,36 @@ export const deleteReview = async (req, res) => {
     });
   }
 };
+
+
+
+
+export const getFeaturedReviews = async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 6, 12);
+
+    const reviews = await Review.find({
+      status: 'approved',
+      isApproved: true,
+    })
+      .sort({
+        isVerifiedPurchase: -1,
+        rating: -1,
+        createdAt: -1,
+      })
+      .limit(limit)
+      .populate('user', 'firstName lastName')
+      .populate('product', 'name slug thumbnail')
+      .populate('adminReply.repliedBy', 'firstName lastName role');
+
+    res.status(200).json({
+      success: true,
+      reviews,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error while fetching featured reviews.',
+    });
+  }
+};
