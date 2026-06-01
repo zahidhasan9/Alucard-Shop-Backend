@@ -225,15 +225,19 @@ const sessionUser = async (req, res) => {
   }
 };
 
-// **🔹 Logout API**
-// app.post("/api/auth/logout",
+
+
+
 const logoutUser = (req, res) => {
-  const { token } = req.cookies;
-  if (!token) {
-    res.json({ message: 'token empty' });
-  }
-  res.cookie('token', '', { httpOnly: true, expires: new Date(0) });
-  res.json({ message: 'Logged out successfully!' });
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+
+  return res.status(200).json({
+    message: "Logged out successfully!",
+  });
 };
 
 // @desc     Get users

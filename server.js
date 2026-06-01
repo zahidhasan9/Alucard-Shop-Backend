@@ -23,6 +23,7 @@ import CouponRoutes from './routes/CouponRoutes.js';
 import WishlistRoutes from './routes/WishlistRoutes.js';
 import QuestionRoutes from './routes/QuestionRoutes.js';
 import ReturnRequestRoutes from './routes/ReturnRequestRoutes.js';
+import DashboardRoutes from './routes/DashboardRoutes.js';
 
 
 import passport from 'passport';
@@ -71,6 +72,7 @@ app.use('/api/order', OrderRoutes);
 app.use('/api/coupon', CouponRoutes);
 app.use('/api/wishlist', WishlistRoutes);
 app.use('/api/question', QuestionRoutes);
+app.use('/api/dashboard', DashboardRoutes);
 app.use('/api/return-request', ReturnRequestRoutes);
 
 const PORT = process.env.PORT || 5000;

@@ -527,6 +527,7 @@ const addOrderItems = async (req, res) => {
       taxPrice = 0,
       shippingPrice = 0,
       couponCode = '',
+      coupon,
       manualPayment,
     } = req.body;
 
@@ -554,10 +555,12 @@ const addOrderItems = async (req, res) => {
       });
     }
 
+    const finalCouponCode = couponCode || coupon?.code || '';
+
     const pricing = await calculateServerOrderPricing({
       cartItems,
       shippingPrice,
-      couponCode,
+      couponCode: finalCouponCode,
       userId: req.user._id,
     });
 
