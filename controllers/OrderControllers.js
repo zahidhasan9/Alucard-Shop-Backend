@@ -1,340 +1,3 @@
-// import Order from '../models/OrderModel.js';
-// import User from '../models/UserModel.js';
-// import Coupon from '../models/CouponModel.js';
-// import { calculateCouponDiscount } from './CouponController.js';
-// import { reduceProductStock } from './ProductController.js';
-// import { nanoid } from 'nanoid';
-
-// export const addOrderItems = async (req, res, next) => {
-//   try {
-//     const {
-//       cartItems,
-//       shippingAddress,
-//       paymentMethod,
-//       itemsPrice,
-//       taxPrice = 0,
-//       shippingPrice = 0,
-//       couponCode,
-//       manualPayment,
-//     } = req.body;
-
-//     if (!cartItems || cartItems.length === 0) {
-//       return res.status(400).json({ message: 'No order items.' });
-//     }
-
-//     const subtotal = Number(itemsPrice || 0);
-//     let discountPrice = 0;
-//     let shippingDiscount = 0;
-//     let coupon = null;
-
-//     if (couponCode) {
-//       const result = await calculateCouponDiscount({
-//         code: couponCode,
-//         subtotal,
-//         shippingPrice,
-//         userId: req.user._id,
-//       });
-//       coupon = result.coupon;
-//       discountPrice = result.discount;
-//       shippingDiscount = result.shippingDiscount;
-//     }
-
-//     const finalShipping = Math.max(0, Number(shippingPrice) - shippingDiscount);
-//     const totalPrice = Math.max(0, subtotal + Number(taxPrice) + finalShipping - discountPrice);
-//     const orderId = `ORD-${nanoid(8).toUpperCase()}`;
-
-//     const normalizedItems = cartItems.map(item => ({
-//       name: item.name,
-//       qty: Number(item.qty || item.quantity || 1),
-//       image: item.image,
-//       price: Number(item.price),
-//       slug: item.slug,
-//       product: item.productId || item.product || item._id,
-//       variantId: item.variantId,
-//       variantLabel: item.variantLabel,
-//     }));
-
-//     await reduceProductStock(normalizedItems);
-
-//     const method = paymentMethod?.method || paymentMethod || 'cod';
-//     const isManualPaid = ['bkash', 'nagad', 'rocket'].includes(method) && manualPayment?.transactionId;
-
-//     const order = await Order.create({
-//       user: req.user._id,
-//       orderItems: normalizedItems,
-//       shippingAddress,
-//       paymentMethod: {
-//         method,
-//         status: method === 'cod' ? 'cod_pending' : isManualPaid ? 'submitted' : 'pending',
-//         paidAt: null,
-//       },
-//       manualPayment: isManualPaid
-//         ? {
-//             provider: method,
-//             senderNumber: manualPayment.senderNumber,
-//             transactionId: manualPayment.transactionId,
-//             amount: Number(manualPayment.amount || totalPrice),
-//             submittedAt: new Date(),
-//             status: 'submitted',
-//           }
-//         : undefined,
-//       coupon: coupon
-//         ? {
-//             code: coupon.code,
-//             type: coupon.type,
-//             value: coupon.value,
-//             discountPrice,
-//             shippingDiscount,
-//           }
-//         : undefined,
-//       discountPrice,
-//       itemsPrice: subtotal,
-//       taxPrice: Number(taxPrice),
-//       shippingPrice: finalShipping,
-//       totalPrice,
-//       orderId,
-//       tracking: [
-//         {
-//           status: 'pending',
-//           message: 'Your order has been placed and is pending confirmation.',
-//           date: new Date(),
-//         },
-//       ],
-//     });
-
-//     if (coupon) {
-//       coupon.usedCount += 1;
-//       coupon.usedBy.push({ user: req.user._id });
-//       await coupon.save();
-//     }
-
-//     res.status(201).json(order);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const getMyOrders = async (req, res, next) => {
-//   try {
-//     const userId = req.user._id;
-//     const [orders, totalOrders, pendingOrders, deliveredOrders, confirmedOrders, shippedOrders] = await Promise.all([
-//       Order.find({ user: userId }).sort({ createdAt: -1 }),
-//       Order.countDocuments({ user: userId }),
-//       Order.countDocuments({ user: userId, Delivery: 'pending' }),
-//       Order.countDocuments({ user: userId, Delivery: 'delivered' }),
-//       Order.countDocuments({ user: userId, Delivery: 'confirmed' }),
-//       Order.countDocuments({ user: userId, Delivery: 'shipped' }),
-//     ]);
-
-//     res.status(200).json({ totalOrders, pendingOrders, deliveredOrders, confirmedOrders, shippedOrders, orders });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const getOrderById = async (req, res, next) => {
-//   try {
-//     const order = await Order.findOne({ orderId: req.params.orderId }).populate('user', 'firstName lastName phone email');
-//     if (!order) return res.status(404).json({ message: 'Order not found!' });
-//     const owner = order.user?._id?.toString() === req.user._id.toString();
-//     if (!owner && req.user.role !== 'admin') return res.status(403).json({ message: 'Not allowed.' });
-//     res.status(200).json(order);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const updateOrderToPaid = async (req, res, next) => {
-//   try {
-//     const order = await Order.findById(req.params.id);
-//     if (!order) return res.status(404).json({ message: 'Order not found!' });
-
-//     order.isPaid = true;
-//     order.paidAt = new Date();
-//     order.paymentMethod.status = 'paid';
-//     order.paymentMethod.paidAt = new Date();
-//     order.paymentResult = {
-//       id: req.body.id,
-//       status: req.body.status || 'paid',
-//       update_time: req.body.updateTime || new Date().toISOString(),
-//       email_address: req.body.email,
-//     };
-
-//     const updatedOrder = await order.save();
-//     res.status(200).json(updatedOrder);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const submitManualPayment = async (req, res, next) => {
-//   try {
-//     const order = await Order.findOne({ orderId: req.params.orderId, user: req.user._id });
-//     if (!order) return res.status(404).json({ message: 'Order not found.' });
-
-//     const { provider, senderNumber, transactionId, amount } = req.body;
-//     order.manualPayment = {
-//       provider,
-//       senderNumber,
-//       transactionId,
-//       amount: Number(amount || order.totalPrice),
-//       submittedAt: new Date(),
-//       status: 'submitted',
-//     };
-//     order.paymentMethod.method = provider;
-//     order.paymentMethod.status = 'submitted';
-
-//     await order.save();
-//     res.json({ success: true, order });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const verifyManualPayment = async (req, res, next) => {
-//   try {
-//     const order = await Order.findOne({ orderId: req.params.orderId });
-//     if (!order) return res.status(404).json({ message: 'Order not found.' });
-
-//     const { status = 'verified', note } = req.body;
-//     order.manualPayment.status = status;
-//     order.manualPayment.verifiedAt = new Date();
-//     order.manualPayment.verifiedBy = req.user._id;
-//     order.manualPayment.adminNote = note;
-
-//     if (status === 'verified') {
-//       order.isPaid = true;
-//       order.paidAt = new Date();
-//       order.paymentMethod.status = 'paid';
-//       order.paymentMethod.paidAt = new Date();
-//       order.paymentResult = {
-//         id: order.manualPayment.transactionId,
-//         status: 'manual_verified',
-//         update_time: new Date().toISOString(),
-//       };
-//     } else {
-//       order.isPaid = false;
-//       order.paymentMethod.status = 'rejected';
-//     }
-
-//     await order.save();
-//     res.json({ success: true, order });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const updateOrderToDeliver = async (req, res, next) => {
-//   try {
-//     const order = await Order.findById(req.params.id);
-//     if (!order) return res.status(404).json({ message: 'Order not found!' });
-//     order.Delivery = 'delivered';
-//     order.deliveredAt = new Date();
-//     order.tracking.push({ status: 'delivered', message: 'Your order has been delivered.', date: new Date() });
-//     const updatedDeliver = await order.save();
-//     res.status(200).json(updatedDeliver);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const getOrders = async (req, res, next) => {
-//   try {
-//     const maxLimit = 20;
-//     const limit = Math.min(Number(req.query.limit) || maxLimit, maxLimit);
-//     const skip = Math.max(Number(req.query.skip) || 0, 0);
-//     const search = req.query.search || '';
-//     const regex = new RegExp(search, 'i');
-
-//     let userIds = [];
-//     if (search) {
-//       userIds = await User.find({ $or: [{ firstName: regex }, { lastName: regex }, { email: regex }, { phone: regex }] }).distinct('_id');
-//     }
-
-//     const filter = search ? { $or: [{ orderId: regex }, { user: { $in: userIds } }] } : {};
-//     if (req.query.status) filter.Delivery = req.query.status;
-//     if (req.query.paymentStatus === 'paid') filter.isPaid = true;
-//     if (req.query.paymentStatus === 'unpaid') filter.isPaid = false;
-
-//     const [orders, total] = await Promise.all([
-//       Order.find(filter).sort({ createdAt: -1 }).limit(limit).skip(skip).populate('user', 'firstName lastName email phone'),
-//       Order.countDocuments(filter),
-//     ]);
-
-//     res.status(200).json({ orders, total, maxLimit, maxSkip: total ? total - 1 : 0 });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const updateDeliveryStatus = async (req, res, next) => {
-//   try {
-//     const { status, message } = req.body;
-//     const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered'];
-//     if (!validStatuses.includes(status)) return res.status(400).json({ message: 'Invalid delivery status' });
-
-//     const order = await Order.findOne({ orderId: req.params.orderId });
-//     if (!order) return res.status(404).json({ message: 'Order not found' });
-
-//     const currentIndex = validStatuses.indexOf(order.Delivery);
-//     const newIndex = validStatuses.indexOf(status);
-//     if (newIndex < currentIndex) return res.status(400).json({ message: 'Cannot update to previous status' });
-
-//     const messages = {
-//       pending: 'Your order is now pending.',
-//       confirmed: 'Your order has been confirmed.',
-//       shipped: 'Your order has been shipped.',
-//       delivered: 'Your order has been delivered.',
-//     };
-
-//     const lastTracking = order.tracking[order.tracking.length - 1];
-//     if (!lastTracking || lastTracking.status !== status) {
-//       order.tracking.push({ status, message: message || messages[status], date: new Date() });
-//     }
-
-//     order.Delivery = status;
-//     if (status === 'delivered') order.deliveredAt = new Date();
-
-//     const updatedOrder = await order.save();
-//     res.status(200).json(updatedOrder);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const resetDeliveryStatus = async (req, res, next) => {
-//   try {
-//     const order = await Order.findOne({ orderId: req.params.orderId });
-//     if (!order) return res.status(404).json({ message: 'Order not found' });
-//     order.Delivery = 'pending';
-//     order.deliveredAt = null;
-//     order.tracking = [{ status: 'pending', message: 'Order status has been reset to pending.', date: new Date() }];
-//     await order.save();
-//     res.status(200).json({ message: 'Order status reset to pending.' });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-// export const getLastOrder = async (req, res) => {
-//   const order = await Order.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(1);
-//   if (!order || order.length === 0) return res.status(404).json({ message: 'No orders found' });
-//   res.status(200).json(order[0]);
-// };
-
-// export const deleteOrder = async (req, res) => {
-//   try {
-//     const deleted = await Order.findOneAndDelete({ orderId: req.params.orderId });
-//     if (!deleted) return res.status(404).json({ message: 'Order not found' });
-//     res.status(200).json({ success: true, message: 'Order deleted' });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-
-
-
 import mongoose from 'mongoose';
 import { nanoid } from 'nanoid';
 
@@ -342,13 +5,67 @@ import Order from '../models/OrderModel.js';
 import User from '../models/UserModel.js';
 import Product from '../models/ProductModel.js';
 import Cart from '../models/CartModel.js';
-
 import {
   calculateServerOrderPricing,
   commitCouponUsage,
 } from './CouponController.js';
 
+const reduceStockUpdates = async stockUpdates => {
+  for (const item of stockUpdates || []) {
+    const qty = Number(item.qty || 0);
+
+    if (!qty || qty < 1) continue;
+
+    if (item.variantId) {
+      const result = await Product.updateOne(
+        {
+          _id: item.productId,
+          variants: {
+            $elemMatch: {
+              _id: item.variantId,
+              stock: { $gte: qty },
+            },
+          },
+          countInStock: { $gte: qty },
+        },
+        {
+          $inc: {
+            'variants.$.stock': -qty,
+            countInStock: -qty,
+          },
+        }
+      );
+
+      if (!result.modifiedCount && !result.nModified) {
+        const error = new Error('Selected variant stock is not available.');
+        error.statusCode = 400;
+        throw error;
+      }
+    } else {
+      const result = await Product.updateOne(
+        {
+          _id: item.productId,
+          countInStock: { $gte: qty },
+        },
+        {
+          $inc: {
+            countInStock: -qty,
+          },
+        }
+      );
+
+      if (!result.modifiedCount && !result.nModified) {
+        const error = new Error('Product stock is not available.');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+  }
+};
+
 const addOrderItems = async (req, res) => {
+  let createdOrder = null;
+
   try {
     const {
       cartItems,
@@ -357,10 +74,8 @@ const addOrderItems = async (req, res) => {
       taxPrice = 0,
       shippingPrice = 0,
       couponCode = '',
-      manualPayment,
       coupon,
-      discountPrice = 0,
-      originalShippingPrice,
+      manualPayment,
     } = req.body;
 
     if (!cartItems || cartItems.length === 0) {
@@ -377,77 +92,90 @@ const addOrderItems = async (req, res) => {
       return res.status(400).json({ message: 'Shipping address is required.' });
     }
 
+    const method = paymentMethod?.method || paymentMethod || 'cod';
+    const transactionId =
+      paymentMethod?.transactionId || manualPayment?.transactionId || '';
+
+    if (method === 'manual' && !String(transactionId).trim()) {
+      return res.status(400).json({
+        message: 'Transaction ID is required for manual payment.',
+      });
+    }
+
+    const finalCouponCode = couponCode || coupon?.code || '';
+
     const pricing = await calculateServerOrderPricing({
       cartItems,
       shippingPrice,
-      couponCode,
+      couponCode: finalCouponCode,
       userId: req.user._id,
     });
 
     const orderId = `ORD-${nanoid(8).toUpperCase()}`;
-
-    const tracking = [
-      {
-        status: 'pending',
-        message: 'Your order has been placed and is now pending.',
-        date: new Date(),
-      },
-    ];
+    const totalWithTax = pricing.totalPrice + Number(taxPrice || 0);
 
     const order = new Order({
       user: req.user._id,
       orderId,
       orderItems: pricing.orderItems,
       shippingAddress,
+
       paymentMethod: {
-        method: paymentMethod?.method || paymentMethod || 'cod',
-        status:
-          paymentMethod?.method === 'manual' || paymentMethod === 'manual'
-            ? 'submitted'
-            : 'pending',
-        transactionId: paymentMethod?.transactionId || null,
+        method,
+        status: method === 'manual' ? 'submitted' : 'pending',
+        transactionId: transactionId || null,
         paidAt: null,
       },
+
+      manualPayment:
+        method === 'manual'
+          ? {
+              provider: manualPayment?.provider || 'bkash',
+              senderNumber:
+                manualPayment?.senderNumber || shippingAddress?.phone || '',
+              transactionId,
+              amount: Number(manualPayment?.amount || totalWithTax),
+              submittedAt: new Date(),
+              status: 'submitted',
+            }
+          : undefined,
+
       coupon: pricing.couponSummary || undefined,
       itemsPrice: pricing.itemsPrice,
       taxPrice: Number(taxPrice || 0),
       shippingPrice: pricing.shippingPrice,
       originalShippingPrice: pricing.originalShippingPrice,
       discountPrice: pricing.discountPrice,
-      totalPrice: pricing.totalPrice + Number(taxPrice || 0),
-      tracking,
-      manualPayment:
-          paymentMethod?.method === 'manual'
-            ? {
-                provider: manualPayment?.provider,
-                senderNumber: manualPayment?.senderNumber,
-                transactionId: manualPayment?.transactionId,
-                amount: manualPayment?.amount,
-                status: 'submitted',
-              }
-            : undefined,
+      totalPrice: totalWithTax,
 
-      coupon: coupon || undefined,
-      discountPrice: Number(discountPrice || 0),
-      originalShippingPrice: Number(originalShippingPrice || shippingPrice || 0),
-          });
+      tracking: [
+        {
+          status: 'pending',
+          message: 'Your order has been placed and is now pending.',
+          date: new Date(),
+        },
+      ],
+    });
 
-    const createdOrder = await order.save();
+    createdOrder = await order.save();
 
-    if (pricing.stockUpdates?.length) {
-      await Product.bulkWrite(
-        pricing.stockUpdates.map((item) => ({
-          updateOne: {
-            filter: {
-              _id: item.productId,
-              countInStock: { $gte: item.qty },
-            },
-            update: {
-              $inc: { countInStock: -item.qty },
-            },
+    if (shippingAddress?.phone) {
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $set: {
+            phone: shippingAddress.phone,
           },
-        }))
+        },
+        { new: true }
       );
+    }
+
+    try {
+      await reduceStockUpdates(pricing.stockUpdates);
+    } catch (stockError) {
+      await Order.findByIdAndDelete(createdOrder._id);
+      throw stockError;
     }
 
     if (pricing.couponDoc) {
@@ -553,8 +281,8 @@ const updateOrderToPaid = async (req, res) => {
 
     order.paymentResult = {
       id: req.body.id,
-      status: req.body.status,
-      update_time: req.body.updateTime,
+      status: req.body.status || 'paid',
+      update_time: req.body.updateTime || new Date().toISOString(),
       email_address: req.body.email,
     };
 
@@ -606,22 +334,40 @@ const getOrders = async (req, res) => {
 
     if (search) {
       const regex = new RegExp(search, 'i');
-      userIds = await User.find({ firstName: regex }).distinct('_id');
+
+      userIds = await User.find({
+        $or: [
+          { firstName: regex },
+          { lastName: regex },
+          { email: regex },
+          { phone: regex },
+        ],
+      }).distinct('_id');
     }
 
     const regex = new RegExp(search, 'i');
 
     const filter = search
-      ? { $or: [{ orderId: regex }, { user: { $in: userIds } }] }
+      ? {
+          $or: [
+            { orderId: regex },
+            { user: { $in: userIds } },
+          ],
+        }
       : {};
+
+    if (req.query.status) filter.Delivery = req.query.status;
+    if (req.query.paymentStatus === 'paid') filter.isPaid = true;
+    if (req.query.paymentStatus === 'unpaid') filter.isPaid = false;
 
     const total = await Order.countDocuments(filter);
     const maxSkip = total ? total - 1 : 0;
 
     const orders = await Order.find(filter)
+      .sort({ createdAt: -1 })
       .limit(limit > maxLimit ? maxLimit : limit)
       .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip)
-      .populate('user', 'id firstName lastName email');
+      .populate('user', 'id firstName lastName email phone');
 
     res.status(200).json({
       orders,
@@ -635,6 +381,63 @@ const getOrders = async (req, res) => {
   }
 };
 
+// const updateDeliveryStatus = async (req, res) => {
+
+//   try {
+//     const { orderId } = req.params;
+//     const { status } = req.body;
+
+//     const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered'];
+
+//     if (!validStatuses.includes(status)) {
+//       return res.status(400).json({ message: 'Invalid delivery status' });
+//     }
+
+//     const order = await Order.findOne({ orderId });
+
+//     if (!order) {
+//       return res.status(404).json({ message: 'Order not found' });
+//     }
+
+//     const currentIndex = validStatuses.indexOf(order.Delivery);
+//     const newIndex = validStatuses.indexOf(status);
+
+//     if (newIndex < currentIndex) {
+//       return res.status(400).json({ message: 'Cannot update to previous status' });
+//     }
+
+//     const messages = {
+//       pending: 'Your order is now pending.',
+//       confirmed: 'Your order has been confirmed.',
+//       shipped: 'Your order has been shipped.',
+//       delivered: 'Your order has been delivered.',
+//     };
+
+//     const lastTracking = order.tracking[order.tracking.length - 1];
+
+//     if (!lastTracking || lastTracking.status !== status) {
+//       order.tracking.push({
+//         status,
+//         message: messages[status],
+//         date: new Date(),
+//       });
+//     }
+
+//     order.Delivery = status;
+
+//     if (status === 'delivered') {
+//       order.deliveredAt = new Date();
+//     }
+
+//     const updatedOrder = await order.save();
+
+//     res.status(200).json(updatedOrder);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message || 'Status update failed' });
+//   }
+// };
+
+
 const updateDeliveryStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -643,20 +446,26 @@ const updateDeliveryStatus = async (req, res) => {
     const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered'];
 
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid delivery status' });
+      return res.status(400).json({
+        message: 'Invalid delivery status',
+      });
     }
 
-    const order = await Order.findOne({ orderId });
+    const order = await findOrderByAnyId(orderId);
 
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({
+        message: 'Order not found',
+      });
     }
 
     const currentIndex = validStatuses.indexOf(order.Delivery);
     const newIndex = validStatuses.indexOf(status);
 
     if (newIndex < currentIndex) {
-      return res.status(400).json({ message: 'Cannot update to previous status' });
+      return res.status(400).json({
+        message: 'Cannot update to previous status. Please reset status first.',
+      });
     }
 
     const messages = {
@@ -666,7 +475,7 @@ const updateDeliveryStatus = async (req, res) => {
       delivered: 'Your order has been delivered.',
     };
 
-    const lastTracking = order.tracking[order.tracking.length - 1];
+    const lastTracking = order.tracking?.[order.tracking.length - 1];
 
     if (!lastTracking || lastTracking.status !== status) {
       order.tracking.push({
@@ -680,24 +489,61 @@ const updateDeliveryStatus = async (req, res) => {
 
     if (status === 'delivered') {
       order.deliveredAt = new Date();
+    } else {
+      order.deliveredAt = null;
     }
 
     const updatedOrder = await order.save();
 
     res.status(200).json(updatedOrder);
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Status update failed' });
+    res.status(500).json({
+      message: error.message || 'Status update failed',
+    });
   }
 };
+
+
+// const resetDeliveryStatus = async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+
+//     const order = await Order.findOne({ orderId });
+
+//     if (!order) {
+//       return res.status(404).json({ message: 'Order not found' });
+//     }
+
+//     order.Delivery = 'pending';
+//     order.deliveredAt = null;
+
+//     order.tracking = [
+//       {
+//         status: 'pending',
+//         message: 'Order status has been reset to pending.',
+//         date: new Date(),
+//       },
+//     ];
+
+//     await order.save();
+
+//     res.status(200).json({ message: 'Order status reset to pending.' });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message || 'Status reset failed' });
+//   }
+// };
+
 
 const resetDeliveryStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findOne({ orderId });
+    const order = await findOrderByAnyId(orderId);
 
     if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({
+        message: 'Order not found',
+      });
     }
 
     order.Delivery = 'pending';
@@ -710,11 +556,16 @@ const resetDeliveryStatus = async (req, res) => {
       },
     ];
 
-    await order.save();
+    const updatedOrder = await order.save();
 
-    res.status(200).json({ message: 'Order status reset to pending.' });
+    res.status(200).json({
+      message: 'Order status reset to pending.',
+      order: updatedOrder,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message || 'Status reset failed' });
+    res.status(500).json({
+      message: error.message || 'Status reset failed',
+    });
   }
 };
 
@@ -738,14 +589,14 @@ const deleteOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    const deleted = await Order.findOneAndDelete({ orderId });
+    let deleted = await Order.findOneAndDelete({ orderId });
 
     if (!deleted && mongoose.Types.ObjectId.isValid(orderId)) {
-      const deletedById = await Order.findByIdAndDelete(orderId);
+      deleted = await Order.findByIdAndDelete(orderId);
+    }
 
-      if (!deletedById) {
-        return res.status(404).json({ message: 'Order not found' });
-      }
+    if (!deleted) {
+      return res.status(404).json({ message: 'Order not found' });
     }
 
     res.status(200).json({
@@ -757,6 +608,104 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+
+
+
+const findOrderByAnyId = async (orderId) => {
+  let order = await Order.findOne({ orderId });
+
+  if (!order && mongoose.Types.ObjectId.isValid(orderId)) {
+    order = await Order.findById(orderId);
+  }
+
+  return order;
+};
+
+const updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, transactionId = '', adminNote = '' } = req.body;
+
+    const validStatuses = ['pending', 'submitted', 'paid', 'failed'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid payment status',
+      });
+    }
+
+    const order = await findOrderByAnyId(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        message: 'Order not found',
+      });
+    }
+
+    if (!order.paymentMethod) {
+      order.paymentMethod = {};
+    }
+
+    order.paymentMethod.status = status;
+
+    if (transactionId) {
+      order.paymentMethod.transactionId = transactionId;
+    }
+
+    if (status === 'paid') {
+      const paidDate = new Date();
+
+      order.isPaid = true;
+      order.paidAt = paidDate;
+      order.paymentMethod.paidAt = paidDate;
+
+      order.paymentResult = {
+        id: transactionId || order.paymentMethod.transactionId || order.orderId,
+        status: 'paid',
+        update_time: paidDate.toISOString(),
+        email_address: order.shippingAddress?.email || '',
+      };
+
+      if (order.manualPayment) {
+        order.manualPayment.status = 'verified';
+      }
+    } else {
+      order.isPaid = false;
+      order.paidAt = null;
+      order.paymentMethod.paidAt = null;
+
+      order.paymentResult = {
+        ...(order.paymentResult || {}),
+        status,
+        update_time: new Date().toISOString(),
+      };
+
+      if (order.manualPayment) {
+        if (status === 'submitted') order.manualPayment.status = 'submitted';
+        if (status === 'failed') order.manualPayment.status = 'rejected';
+        if (status === 'pending') order.manualPayment.status = 'submitted';
+      }
+    }
+
+    if (order.manualPayment && adminNote) {
+      order.manualPayment.adminNote = adminNote;
+    }
+
+    const updatedOrder = await order.save();
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message || 'Payment status update failed',
+    });
+  }
+};
+
+
+
+
+
+
 export {
   addOrderItems,
   getMyOrders,
@@ -767,6 +716,7 @@ export {
   getLastOrder,
   deleteOrder,
   updateDeliveryStatus,
-  resetDeliveryStatus
+  resetDeliveryStatus,
+  updatePaymentStatus,
   
 };

@@ -17,9 +17,11 @@ router.post('/apply', protect, applyCoupon);
 
 router.get('/', protect, admin, getCoupons);
 router.post('/', protect, admin, createCoupon);
-router.put('/:id', protect, admin, updateCoupon);
-router.delete('/:id', protect, admin, deleteCoupon);
 
 router.post('/seed-default', protect, admin, seedDefaultCoupons);
+router.post('/seed-defaults', protect, admin, seedDefaultCoupons);
+
+router.put('/:id', protect, admin, updateCoupon);
+router.delete('/:id', protect, admin, deleteCoupon);
 
 export default router;

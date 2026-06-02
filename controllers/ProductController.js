@@ -185,47 +185,241 @@ export const getProduct = async (req, res, next) => {
   }
 };
 
-export const updateProduct = async (req, res, next) => {
-  try {
-    const product = await Product.findOne({ slug: req.params.slug });
-    if (!product) return res.status(404).json({ message: 'Product not found!' });
 
-    const imageUrls = getUploadedImages(req);
-    if (imageUrls.length > 0) {
-      if (product.thumbnail) await deleteImage(product.thumbnail);
-      for (const img of product.images || []) await deleteImage(img);
-      product.thumbnail = imageUrls[0];
-      product.images = imageUrls;
+export const getAdminProducts = async (req, res, next) => {
+  try {
+    const totalAll = await Product.countDocuments({});
+    const activeTotal = await Product.countDocuments({ isActive: true });
+    const inactiveTotal = await Product.countDocuments({ isActive: false });
+
+    const maxLimit = parseInt(process.env.PAGINATION_MAX_LIMIT) || 24;
+    const limit = Math.min(Number(req.query.limit) || maxLimit, maxLimit);
+    const skip = Math.max(Number(req.query.skip) || 0, 0);
+
+    const {
+      search = '',
+      category,
+      brand,
+      minPrice = 0,
+      maxPrice = Number.MAX_SAFE_INTEGER,
+      minRating = 0,
+      stock,
+      sort = 'latest',
+      status = 'all',
+    } = req.query;
+
+    const filter = {
+      price: { $gte: Number(minPrice), $lte: Number(maxPrice) },
+      rating: { $gte: Number(minRating) },
+    };
+
+    if (status === 'active') filter.isActive = true;
+    if (status === 'inactive') filter.isActive = false;
+
+    if (stock === 'in') filter.countInStock = { $gt: 0 };
+    if (stock === 'out') filter.countInStock = { $lte: 0 };
+
+    if (category) filter.category = category;
+    if (brand) filter.brand = brand;
+
+    if (search.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+
+      const [matchedCategories, matchedBrands] = await Promise.all([
+        Category.find({ name: regex }).select('_id'),
+        Brand.find({ name: regex }).select('_id'),
+      ]);
+
+      filter.$or = [
+        { name: regex },
+        { slug: regex },
+        { description: regex },
+        { category: { $in: matchedCategories.map((item) => item._id) } },
+        { brand: { $in: matchedBrands.map((item) => item._id) } },
+      ];
     }
 
-    const fields = [
-      'name',
-      'description',
-      'shortDescription',
-      'brand',
-      'category',
-      'metaTitle',
-      'metaDescription',
-    ];
-    fields.forEach(field => {
-      if (req.body[field] !== undefined && req.body[field] !== '') product[field] = req.body[field];
+    const sortMap = {
+      latest: { createdAt: -1 },
+      oldest: { createdAt: 1 },
+      price_low: { price: 1 },
+      price_high: { price: -1 },
+      rating: { rating: -1 },
+      popular: { sold: -1, rating: -1 },
+      discount: { discount: -1 },
+    };
+
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .sort(sortMap[sort] || sortMap.latest)
+        .limit(limit)
+        .skip(skip)
+        .populate('category', 'name slug')
+        .populate('brand', 'name slug'),
+      Product.countDocuments(filter),
+    ]);
+
+    res.status(200).json({
+      products,
+      total,
+      totalAll,
+      activeTotal,
+      inactiveTotal,
+      maxLimit,
+      maxSkip: total ? total - 1 : 0,
+      page: Math.floor(skip / limit) + 1,
+      pages: Math.ceil(total / limit),
     });
-
-    if (req.body.price !== undefined) product.price = Number(req.body.price);
-    if (req.body.oldPrice !== undefined) product.oldPrice = Number(req.body.oldPrice);
-    if (req.body.countInStock !== undefined) product.countInStock = Number(req.body.countInStock);
-    if (req.body.isFeatured !== undefined) product.isFeatured = req.body.isFeatured === 'true' || req.body.isFeatured === true;
-    if (req.body.flash_sell !== undefined) product.flash_sell = req.body.flash_sell === 'true' || req.body.flash_sell === true;
-    if (req.body.isActive !== undefined) product.isActive = req.body.isActive === 'true' || req.body.isActive === true;
-    if (req.body.variants !== undefined) product.variants = normalizeVariants(req.body.variants);
-    if (req.body.details !== undefined) product.details = parseJSON(req.body.details) || [];
-
-    if (req.body.name && req.body.name !== product.name) product.slug = await makeSlug(req.body.name);
-
-    const updatedProduct = await product.save();
-    res.status(200).json(updatedProduct);
   } catch (error) {
     next(error);
+  }
+};
+
+export const getAdminProduct = async (req, res, next) => {
+  try {
+    const product = await Product.findOne({ slug: req.params.slug })
+      .populate('category', 'name slug')
+      .populate('brand', 'name slug');
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found!' });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findOne({ slug: req.params.slug });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+
+    const {
+      name,
+      oldPrice,
+      price,
+      countInStock,
+      description,
+      shortDescription,
+      product_type,
+      category,
+      brand,
+      isFeatured,
+      flash_sell,
+      isActive,
+      metaTitle,
+      metaDescription,
+      details,
+      variants,
+    } = req.body;
+
+    if (name !== undefined) product.name = name;
+    if (oldPrice !== undefined) product.oldPrice = Number(oldPrice);
+    if (price !== undefined) product.price = Number(price);
+    if (countInStock !== undefined) product.countInStock = Number(countInStock);
+    if (description !== undefined) product.description = description;
+    if (shortDescription !== undefined) product.shortDescription = shortDescription;
+    if (product_type !== undefined) product.product_type = product_type;
+
+    if (category !== undefined && category !== '') {
+      product.category = category;
+    }
+
+    if (brand !== undefined && brand !== '') {
+      product.brand = brand;
+    }
+
+    if (isFeatured !== undefined && isFeatured !== '') {
+      product.isFeatured = isFeatured === 'true' || isFeatured === true;
+    }
+
+    if (flash_sell !== undefined && flash_sell !== '') {
+      product.flash_sell = flash_sell === 'true' || flash_sell === true;
+    }
+
+    if (isActive !== undefined && isActive !== '') {
+      product.isActive = isActive === 'true' || isActive === true;
+    }
+
+    if (metaTitle !== undefined) product.metaTitle = metaTitle;
+    if (metaDescription !== undefined) product.metaDescription = metaDescription;
+
+    if (details !== undefined) {
+      try {
+        const parsedDetails = JSON.parse(details);
+
+        product.details = Array.isArray(parsedDetails)
+          ? parsedDetails
+              .filter((item) => item.key && item.value)
+              .map((item) => ({
+                key: item.key,
+                value: item.value,
+              }))
+          : [];
+      } catch (error) {
+        product.details = [];
+      }
+    }
+
+    if (variants !== undefined) {
+      try {
+        const parsedVariants = JSON.parse(variants);
+
+        product.variants = Array.isArray(parsedVariants)
+          ? parsedVariants
+              .filter((variant) => variant.sku || variant.label)
+              .map((variant) => ({
+                sku: variant.sku || '',
+                label: variant.label || '',
+                price: Number(variant.price || 0),
+                oldPrice: Number(variant.oldPrice || 0),
+                stock: Number(variant.stock || 0),
+                image: variant.image || '',
+                attributes: Array.isArray(variant.attributes)
+                  ? variant.attributes
+                      .filter((attr) => attr.key && attr.value)
+                      .map((attr) => ({
+                        key: attr.key,
+                        value: attr.value,
+                      }))
+                  : [],
+              }))
+          : [];
+      } catch (error) {
+        product.variants = [];
+      }
+    }
+
+    if (req.files && req.files.length > 0) {
+      const uploadedImages = req.files.map((file) => file.path);
+
+      product.images = [...(product.images || []), ...uploadedImages];
+
+      if (!product.thumbnail) {
+        product.thumbnail = uploadedImages[0];
+      }
+    }
+
+    const updatedProduct = await product.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Product updated successfully',
+      product: updatedProduct,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

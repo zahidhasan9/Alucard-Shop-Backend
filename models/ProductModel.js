@@ -1,16 +1,15 @@
 import mongoose from 'mongoose';
 
 const variantSchema = new mongoose.Schema(
-  {
+  { 
     sku: { type: String, trim: true },
-    label: { type: String, trim: true }, // Example: Black / XL / 128GB
-    color: { type: String, trim: true },
-    size: { type: String, trim: true },
-    storage: { type: String, trim: true },
+    label: { type: String, trim: true },
+
     price: { type: Number, min: 0 },
     oldPrice: { type: Number, min: 0 },
     stock: { type: Number, min: 0, default: 0 },
     image: { type: String, trim: true },
+
     attributes: [
       {
         key: { type: String, trim: true },

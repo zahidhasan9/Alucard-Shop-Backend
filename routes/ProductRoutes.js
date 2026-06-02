@@ -9,6 +9,8 @@ import {
   getProductsByCategory,
   getFeaturedProducts,
   getFlashsellProducts,
+  getAdminProducts,
+  getAdminProduct,
   getRelatedProducts,
 } from '../controllers/ProductController.js';
 import { protect, admin } from '../middlewares/authMiddleware.js';
@@ -18,6 +20,8 @@ const router = express.Router();
 
 router.post('/add', protect, admin, upload.array('images', 8), createProduct);
 router.get('/', getProducts);
+router.get('/admin/all', protect, admin, getAdminProducts);
+router.get('/admin/:slug', protect, admin, getAdminProduct);
 router.get('/featured', getFeaturedProducts);
 router.get('/flashsell', getFlashsellProducts);
 router.get('/top', getTopProducts);

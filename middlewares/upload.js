@@ -39,6 +39,10 @@
 
 // module.exports = upload;
 
+
+import dotenv from 'dotenv';
+dotenv.config();
+
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -129,3 +133,5 @@ export default upload; // If use upload it is only for single upload
 //   { name: 'thumbnail', maxCount: 1 },
 //   { name: 'images', maxCount: 3 },
 // ]);
+
+

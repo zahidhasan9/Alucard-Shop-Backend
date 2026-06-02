@@ -3,18 +3,22 @@ import mongoose from 'mongoose';
 import Coupon from '../models/CouponModel.js';
 import Product from '../models/ProductModel.js';
 
-const roundMoney = (value) => Math.round(Number(value || 0));
+const roundMoney = value => Math.round(Number(value || 0));
 
-const getCartProductId = (item) => {
-  return item.productId || item.product || item._id || null;
+const getCartProductId = item => {
+  if (item?.productId) return item.productId;
+  if (item?.product?._id) return item.product._id;
+  if (item?.product) return item.product;
+  if (item?._id) return item._id;
+
+  return null;
 };
 
-const findProductFromCartItem = async (item) => {
+const findProductFromCartItem = async item => {
   const possibleId = getCartProductId(item);
 
   if (possibleId && mongoose.Types.ObjectId.isValid(possibleId)) {
     const product = await Product.findById(possibleId);
-
     if (product) return product;
   }
 
@@ -25,15 +29,71 @@ const findProductFromCartItem = async (item) => {
   return null;
 };
 
+const findVariantFromCartItem = (product, item) => {
+  if (!product || !Array.isArray(product.variants)) return null;
+
+  if (item?.variantId) {
+    const id = String(item.variantId);
+
+    return (
+      product.variants?.id?.(id) ||
+      product.variants.find(variant => String(variant._id) === id) ||
+      null
+    );
+  }
+
+  if (item?.variantLabel) {
+    return (
+      product.variants.find(
+        variant => String(variant.label || '').trim() === String(item.variantLabel).trim()
+      ) || null
+    );
+  }
+
+  return null;
+};
+
+const getVariantLabel = variant => {
+  if (!variant) return '';
+
+  if (variant.label) return variant.label;
+
+  const attributes = Array.isArray(variant.attributes)
+    ? variant.attributes
+        .filter(item => item?.key && item?.value)
+        .map(item => `${item.key}: ${item.value}`)
+        .join(' / ')
+    : '';
+
+  return attributes || variant.sku || '';
+};
+
+const getVariantAttributesMap = variant => {
+  if (!variant || !Array.isArray(variant.attributes)) return {};
+
+  return variant.attributes.reduce((acc, item) => {
+    if (item?.key && item?.value !== undefined && item?.value !== null) {
+      acc[item.key] = String(item.value);
+    }
+
+    return acc;
+  }, {});
+};
+
 const getCouponUsageForUser = (coupon, userId) => {
   const record = coupon.usedBy.find(
-    (item) => String(item.user) === String(userId)
+    item => String(item.user) === String(userId)
   );
 
   return record?.count || 0;
 };
 
-const checkCouponValidity = async ({ couponCode, itemsPrice, shippingPrice, userId }) => {
+const checkCouponValidity = async ({
+  couponCode,
+  itemsPrice,
+  shippingPrice,
+  userId,
+}) => {
   const code = String(couponCode || '').trim().toUpperCase();
 
   if (!code) {
@@ -158,30 +218,62 @@ export const calculateServerOrderPricing = async ({
       throw error;
     }
 
-    if (Number(product.countInStock || 0) < qty) {
-      const error = new Error(`${product.name} is out of stock or not enough stock`);
+    const hasVariants = Array.isArray(product.variants) && product.variants.length > 0;
+    const variant = findVariantFromCartItem(product, item);
+
+    if (hasVariants && !variant) {
+      const error = new Error(`Please select a variant for ${product.name}`);
       error.statusCode = 400;
       throw error;
     }
+
+    const availableStock = variant
+      ? Number(variant.stock || 0)
+      : Number(product.countInStock || 0);
+
+    if (availableStock < qty) {
+      const error = new Error(
+        `${product.name}${variant ? ` (${getVariantLabel(variant)})` : ''} has only ${availableStock} item(s) available`
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const itemPrice = Number(variant?.price ?? product.price ?? 0);
+    const variantLabel = variant ? getVariantLabel(variant) : item.variantLabel || '';
 
     orderItems.push({
       product: product._id,
       name: product.name,
       qty,
-      image: item.image || product.thumbnail || product.images?.[0] || '',
-      price: product.price,
+      image:
+        variant?.image ||
+        product.thumbnail ||
+        product.images?.[0] ||
+        item.image ||
+        '',
+      price: itemPrice,
       slug: product.slug,
-      selectedVariants: item.selectedVariants || {},
+      variantId: variant?._id,
+      variantLabel,
+      variantSku: variant?.sku || item.variantSku || '',
+      selectedVariants: variant
+        ? getVariantAttributesMap(variant)
+        : item.selectedVariants || {},
     });
 
     stockUpdates.push({
       productId: product._id,
+      variantId: variant?._id,
       qty,
     });
   }
 
   const itemsPrice = roundMoney(
-    orderItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0)
+    orderItems.reduce(
+      (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1),
+      0
+    )
   );
 
   const normalShippingPrice = roundMoney(shippingPrice);
@@ -219,7 +311,7 @@ export const commitCouponUsage = async (coupon, userId) => {
   coupon.usedCount += 1;
 
   const record = coupon.usedBy.find(
-    (item) => String(item.user) === String(userId)
+    item => String(item.user) === String(userId)
   );
 
   if (record) {
@@ -282,7 +374,6 @@ export const createCoupon = async (req, res) => {
 export const getCoupons = async (req, res) => {
   try {
     const coupons = await Coupon.find().sort({ createdAt: -1 });
-
     res.status(200).json(coupons);
   } catch (error) {
     res.status(500).json({
