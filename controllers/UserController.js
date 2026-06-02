@@ -80,59 +80,6 @@ const registerUser = async (req, res, next) => {
   }
 };
 
-// const loginUser = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     if (!email || !password) {
-//       return res.status(400).json({ message: 'Email and password are required' });
-//     }
-
-//     const user = await User.findOne({ email }).lean(); // Lean will boost performance
-
-//     if (!user) {
-//       return res
-//         .status(404)
-//         .json({ message: 'Invalid email address. Please check your email and try again.' });
-//     }
-
-//     // const match = await bcrypt.compare(password, user.password |"");
-//     const match = await verifyPassword(password, user.password);
-
-//     if (!match) {
-//       return res
-//         .status(401)
-//         .json({ message: 'Invalid password. Please check your password and try again.' });
-//     }
-
-//     const token = generateToken({
-//       id: user._id,
-//       email: user.email,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//     });
-
-//     //  Set cookie
-//     res.cookie('token', token, {
-//       httpOnly: true,
-//       // secure: process.env.NODE_ENV === "production", // Production হলে Secure হবে
-//       secure: true,
-//       // domain: 'localhost',
-//       sameSite: 'none',
-//       maxAge: 24 * 60 * 60 * 1000,
-//     });
-//     res.status(200).json({
-//       message: 'Login successful',
-//       user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-//       token,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message || 'Internal server error' });
-//   }
-// };
-
-// **🔹 Session API**
-// /api/auth/session",
 
 const loginUser = async (req, res) => {
   try {
@@ -180,8 +127,8 @@ const loginUser = async (req, res) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000,
     });
 

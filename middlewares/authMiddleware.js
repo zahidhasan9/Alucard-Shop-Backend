@@ -1,35 +1,35 @@
-import User from '../models/UserModel.js';
-// import Order from "../models/Order.js";
-import jwt from 'jsonwebtoken';
+// import User from '../models/UserModel.js';
+// // import Order from "../models/Order.js";
+// import jwt from 'jsonwebtoken';
 
-// Middleware to protect routes by verifying JWT authentication token.
-const protect = async (req, res, next) => {
-  try {
-    const token = req.cookies.token;
+// // Middleware to protect routes by verifying JWT authentication token.
+// const protect = async (req, res, next) => {
+//   try {
+//     const token = req.cookies.token;
 
-    if (!token) {
-      res.statusCode = 401;
-      throw new Error('Authentication failed: Token not provided.');
-    }
+//     if (!token) {
+//       res.statusCode = 401;
+//       throw new Error('Authentication failed: Token not provided.');
+//     }
 
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+//     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!decodedToken) {
-      res.statusCode = 401;
-      throw new Error('Authentication failed: Invalid token.');
-    }
-    req.user = await User.findById(decodedToken.id).select('-password');
+//     if (!decodedToken) {
+//       res.statusCode = 401;
+//       throw new Error('Authentication failed: Invalid token.');
+//     }
+//     req.user = await User.findById(decodedToken.id).select('-password');
 
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
-// Middleware to check if the user is an admin.
+
 // const admin = (req, res, next) => {
 //   try {
-//     if (!req.user || !req.user.isAdmin) {
+//     if (req.user.role !== 'admin') {
 //       res.statusCode = 401;
 //       throw new Error('Authorization failed: Not authorized as an admin.');
 //     }
@@ -39,48 +39,88 @@ const protect = async (req, res, next) => {
 //   }
 // };
 
-const admin = (req, res, next) => {
+// // Middleware to protect routes by verifying JWT authentication token  same like protect upu can use both.
+// const authRoute = (req, res, next) => {
+//   const token = req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+
+//   if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     req.userId = decoded.id;
+//     next();
+//   } catch (err) {
+//     res.status(401).json({ message: 'Invalid token' });
+//   }
+// };
+
+// export { protect, admin, authRoute };
+
+
+
+
+
+import jwt from 'jsonwebtoken';
+import User from '../models/UserModel.js';
+
+const getTokenFromRequest = (req) => {
+  const cookieToken = req.cookies?.token;
+
+  const authHeader = req.headers?.authorization;
+  const bearerToken =
+    authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]
+      : null;
+
+  return cookieToken || bearerToken;
+};
+
+const protect = async (req, res, next) => {
   try {
-    if (req.user.role !== 'admin') {
+    const token = getTokenFromRequest(req);
+
+    if (!token) {
       res.statusCode = 401;
-      throw new Error('Authorization failed: Not authorized as an admin.');
+      throw new Error('Authentication failed: Token not provided.');
     }
+
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decodedToken.id).select('-password');
+
+    if (!user) {
+      res.statusCode = 401;
+      throw new Error('Authentication failed: User not found.');
+    }
+
+    if (user.isActive === false) {
+      res.statusCode = 403;
+      throw new Error('Your account has been deactivated.');
+    }
+
+    req.user = user;
+    req.userId = user._id;
+
     next();
   } catch (error) {
     next(error);
   }
 };
 
-// Middleware to protect routes by verifying JWT authentication token  same like protect upu can use both.
-const authRoute = (req, res, next) => {
-  const token = req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
-
+const admin = (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
+    if (!req.user || req.user.role !== 'admin') {
+      res.statusCode = 403;
+      throw new Error('Authorization failed: Not authorized as an admin.');
+    }
+
     next();
-  } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
+  } catch (error) {
+    next(error);
   }
 };
 
+const authRoute = protect;
+
 export { protect, admin, authRoute };
 
-// check product purchased after add reviwe
-// export const hasPurchased = async (req, res, next) => {
-//   const userId = req.user._id;
-//   const productId = req.body.product;
-
-//   const order = await Order.findOne({
-//     user: userId,
-//     'items.product': productId,
-//   });
-
-//   if (!order) {
-//     return res.status(403).json({ message: 'You can only review purchased products.' });
-//   }
-
-//   next();
-// };

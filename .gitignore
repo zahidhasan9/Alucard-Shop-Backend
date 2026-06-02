@@ -1,3 +1,9 @@
 node_modules
 node_modules
 package-lock.json
+.env
+.env.*
+logs/
+uploads/
+.DS_Store
+npm-debug.log*
