@@ -54,26 +54,6 @@ const getAddressByType = async (req, res) => {
   }
 };
 
-//  Update an address
-// const updateAddress = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const updated = await Address.findOneAndUpdate({ _id: id, user: req.userId }, req.body, {
-//       new: true,
-//       runValidators: true,
-//     });
-
-//     if (!updated) {
-//       return res.status(404).json({ message: 'Address not found or not authorized' });
-//     }
-
-//     res.status(200).json({ message: 'Address updated successfully', address: updated });
-//   } catch (err) {
-//     console.error('Update Address Error:', err.message);
-//     res.status(500).json({ message: 'Update failed', error: err.message });
-//   }
-// };
 
 const updateAddress = async (req, res) => {
   try {

@@ -291,52 +291,6 @@ export const getAdminProduct = async (req, res, next) => {
   }
 };
 
-// export const updateProduct = async (req, res, next) => {
-//   try {
-//     const product = await Product.findOne({ slug: req.params.slug });
-//     if (!product) return res.status(404).json({ message: 'Product not found!' });
-
-//     const imageUrls = getUploadedImages(req);
-//     if (imageUrls.length > 0) {
-//       if (product.thumbnail) await deleteImage(product.thumbnail);
-//       for (const img of product.images || []) await deleteImage(img);
-//       product.thumbnail = imageUrls[0];
-//       product.images = imageUrls;
-//     }
-
-//     const fields = [
-//       'name',
-//       'description',
-//       'shortDescription',
-//       'brand',
-//       'category',
-//       'metaTitle',
-//       'metaDescription',
-//     ];
-//     fields.forEach(field => {
-//       if (req.body[field] !== undefined && req.body[field] !== '') product[field] = req.body[field];
-//     });
-
-//     if (req.body.price !== undefined) product.price = Number(req.body.price);
-//     if (req.body.oldPrice !== undefined) product.oldPrice = Number(req.body.oldPrice);
-//     if (req.body.countInStock !== undefined) product.countInStock = Number(req.body.countInStock);
-//     if (req.body.isFeatured !== undefined) product.isFeatured = req.body.isFeatured === 'true' || req.body.isFeatured === true;
-//     if (req.body.flash_sell !== undefined) product.flash_sell = req.body.flash_sell === 'true' || req.body.flash_sell === true;
-//     if (req.body.isActive !== undefined) product.isActive = req.body.isActive === 'true' || req.body.isActive === true;
-//     if (req.body.variants !== undefined) product.variants = normalizeVariants(req.body.variants);
-//     if (req.body.details !== undefined) product.details = parseJSON(req.body.details) || [];
-
-//     if (req.body.name && req.body.name !== product.name) product.slug = await makeSlug(req.body.name);
-
-//     const updatedProduct = await product.save();
-//     res.status(200).json(updatedProduct);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-
-
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findOne({ slug: req.params.slug });
