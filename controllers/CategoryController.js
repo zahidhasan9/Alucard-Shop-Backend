@@ -130,23 +130,54 @@ const makeUniqueSlug = async (Model, name, ignoreId = null) => {
   }
 };
 
+// const buildCategoryPayload = (body) => {
+//   return {
+//     name: body.name?.trim(),
+//     description: body.description?.trim() || '',
+//     image: body.image?.trim() || '',
+//     parentCategory: body.parentCategory || null,
+//     isActive:
+//       typeof body.isActive === 'boolean' ? body.isActive : body.isActive === 'true',
+//     isFeatured:
+//       typeof body.isFeatured === 'boolean'
+//         ? body.isFeatured
+//         : body.isFeatured === 'true',
+//     sortOrder: Number(body.sortOrder || 0),
+//     metaTitle: body.metaTitle?.trim() || '',
+//     metaDescription: body.metaDescription?.trim() || '',
+//   };
+// };
+
+
+
 const buildCategoryPayload = (body) => {
   return {
     name: body.name?.trim(),
     description: body.description?.trim() || '',
     image: body.image?.trim() || '',
+
+    iconKey: body.iconKey?.trim()?.toLowerCase() || 'shopping-bag',
+
     parentCategory: body.parentCategory || null,
+
     isActive:
-      typeof body.isActive === 'boolean' ? body.isActive : body.isActive === 'true',
+      typeof body.isActive === 'boolean'
+        ? body.isActive
+        : body.isActive === 'true',
+
     isFeatured:
       typeof body.isFeatured === 'boolean'
         ? body.isFeatured
         : body.isFeatured === 'true',
+
     sortOrder: Number(body.sortOrder || 0),
+
     metaTitle: body.metaTitle?.trim() || '',
     metaDescription: body.metaDescription?.trim() || '',
   };
 };
+
+
 
 const attachProductCount = async (categories) => {
   const counts = await Product.aggregate([
@@ -354,6 +385,7 @@ export const updateCategory = async (req, res) => {
     category.slug = newSlug;
     category.description = payload.description;
     category.image = payload.image;
+    category.iconKey = payload.iconKey;
     category.parentCategory =
       payload.parentCategory && mongoose.Types.ObjectId.isValid(payload.parentCategory)
         ? payload.parentCategory

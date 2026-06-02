@@ -1,17 +1,3 @@
-// import mongoose from 'mongoose';
-
-// const categorySchema = new mongoose.Schema(
-//   {
-//     name: { type: String, required: true, unique: true },
-//     slug: { type: String, required: true, unique: true },
-//     description: { type: String },
-//   },
-//   { timestamps: true }
-// );
-
-// // Create the Review model
-// const CategorySchema = mongoose.model('Category', categorySchema);
-// export default CategorySchema;
 
 
 
@@ -45,6 +31,30 @@ const categorySchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: '',
+    },
+
+     iconKey: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: 'shopping-bag',
+      enum: [
+        'shirt',
+        'sparkles',
+        'smartphone',
+        'watch',
+        'headphones',
+        'baby',
+        'shopping-bag',
+        'gift',
+        'monitor',
+        'laptop',
+        'camera',
+        'shoe',
+        'book-open',
+        'home',
+        'gamepad',
+      ],
     },
 
     parentCategory: {
