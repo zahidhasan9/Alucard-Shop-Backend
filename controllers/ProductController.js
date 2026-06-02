@@ -185,6 +185,112 @@ export const getProduct = async (req, res, next) => {
   }
 };
 
+
+export const getAdminProducts = async (req, res, next) => {
+  try {
+    const totalAll = await Product.countDocuments({});
+    const activeTotal = await Product.countDocuments({ isActive: true });
+    const inactiveTotal = await Product.countDocuments({ isActive: false });
+
+    const maxLimit = parseInt(process.env.PAGINATION_MAX_LIMIT) || 24;
+    const limit = Math.min(Number(req.query.limit) || maxLimit, maxLimit);
+    const skip = Math.max(Number(req.query.skip) || 0, 0);
+
+    const {
+      search = '',
+      category,
+      brand,
+      minPrice = 0,
+      maxPrice = Number.MAX_SAFE_INTEGER,
+      minRating = 0,
+      stock,
+      sort = 'latest',
+      status = 'all',
+    } = req.query;
+
+    const filter = {
+      price: { $gte: Number(minPrice), $lte: Number(maxPrice) },
+      rating: { $gte: Number(minRating) },
+    };
+
+    if (status === 'active') filter.isActive = true;
+    if (status === 'inactive') filter.isActive = false;
+
+    if (stock === 'in') filter.countInStock = { $gt: 0 };
+    if (stock === 'out') filter.countInStock = { $lte: 0 };
+
+    if (category) filter.category = category;
+    if (brand) filter.brand = brand;
+
+    if (search.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+
+      const [matchedCategories, matchedBrands] = await Promise.all([
+        Category.find({ name: regex }).select('_id'),
+        Brand.find({ name: regex }).select('_id'),
+      ]);
+
+      filter.$or = [
+        { name: regex },
+        { slug: regex },
+        { description: regex },
+        { category: { $in: matchedCategories.map((item) => item._id) } },
+        { brand: { $in: matchedBrands.map((item) => item._id) } },
+      ];
+    }
+
+    const sortMap = {
+      latest: { createdAt: -1 },
+      oldest: { createdAt: 1 },
+      price_low: { price: 1 },
+      price_high: { price: -1 },
+      rating: { rating: -1 },
+      popular: { sold: -1, rating: -1 },
+      discount: { discount: -1 },
+    };
+
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .sort(sortMap[sort] || sortMap.latest)
+        .limit(limit)
+        .skip(skip)
+        .populate('category', 'name slug')
+        .populate('brand', 'name slug'),
+      Product.countDocuments(filter),
+    ]);
+
+    res.status(200).json({
+      products,
+      total,
+      totalAll,
+      activeTotal,
+      inactiveTotal,
+      maxLimit,
+      maxSkip: total ? total - 1 : 0,
+      page: Math.floor(skip / limit) + 1,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAdminProduct = async (req, res, next) => {
+  try {
+    const product = await Product.findOne({ slug: req.params.slug })
+      .populate('category', 'name slug')
+      .populate('brand', 'name slug');
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found!' });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // export const updateProduct = async (req, res, next) => {
 //   try {
 //     const product = await Product.findOne({ slug: req.params.slug });

@@ -18,6 +18,7 @@ import BrandRoutes from './routes/BrandRoutes.js';
 import ReviewRoutes from './routes/ReviewRoutes.js';
 import CartRoutes from './routes/CartRoutes.js';
 import OrderRoutes from './routes/OrderRoutes.js';
+import BannerRoutes from './routes/BannerRoutes.js';
 
 import CouponRoutes from './routes/CouponRoutes.js';
 import WishlistRoutes from './routes/WishlistRoutes.js';
@@ -69,6 +70,7 @@ app.use('/api/brand', BrandRoutes);
 app.use('/api/review', ReviewRoutes);
 app.use('/api/cart', CartRoutes);
 app.use('/api/order', OrderRoutes);
+app.use('/api/banner', BannerRoutes);
 app.use('/api/coupon', CouponRoutes);
 app.use('/api/wishlist', WishlistRoutes);
 app.use('/api/question', QuestionRoutes);
