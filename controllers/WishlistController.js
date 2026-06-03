@@ -1,38 +1,184 @@
-const User = require('../models/user.model');
+import mongoose from 'mongoose';
 
-const addToWishlist = async (req, res) => {
-  const { productId } = req.params;
-  const user = await User.findById(req.user._id);
+import Wishlist from '../models/WishlistModel.js';
+import Product from '../models/ProductModel.js';
 
-  // Convert ObjectId to string for comparison
-  const alreadyInWishlist = user.wishlist.map(id => id.toString()).includes(productId);
+const populateWishlist = async (wishlist) => {
+  if (!wishlist) return null;
 
-  if (alreadyInWishlist) {
-    return res.status(400).json({
-      success: false,
-      message: 'Product is already in wishlist',
+  return wishlist.populate({
+    path: 'products',
+    select:
+      'name slug price oldPrice discount thumbnail images rating numReviews countInStock stock brand category',
+    populate: [
+      {
+        path: 'category',
+        select: 'name slug',
+      },
+      {
+        path: 'brand',
+        select: 'name slug',
+      },
+    ],
+  });
+};
+
+const getOrCreateWishlist = async (userId) => {
+  let wishlist = await Wishlist.findOne({ user: userId });
+
+  if (!wishlist) {
+    wishlist = await Wishlist.create({
+      user: userId,
+      products: [],
     });
   }
 
-  user.wishlist.push(productId);
-  await user.save();
-
-  res.status(200).json({ success: true, wishlist: user.wishlist });
+  return wishlist;
 };
 
-const removeFromWishlist = async (req, res) => {
-  const { productId } = req.params;
-  const user = await User.findById(req.user._id);
+export const getWishlist = async (req, res) => {
+  try {
+    const wishlist = await getOrCreateWishlist(req.user._id);
+    await populateWishlist(wishlist);
 
-  user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
-  await user.save();
-
-  res.status(200).json({ success: true, wishlist: user.wishlist });
+    res.status(200).json({
+      success: true,
+      count: wishlist.products.length,
+      productIds: wishlist.products.map((product) => String(product._id)),
+      products: wishlist.products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Wishlist fetch failed',
+    });
+  }
 };
 
-const getWishlist = async (req, res) => {
-  const user = await User.findById(req.user._id).populate('wishlist');
-  res.status(200).json({ success: true, wishlist: user.wishlist });
+export const getWishlistIds = async (req, res) => {
+  try {
+    const wishlist = await getOrCreateWishlist(req.user._id);
+
+    res.status(200).json({
+      success: true,
+      count: wishlist.products.length,
+      productIds: wishlist.products.map((id) => String(id)),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Wishlist ids fetch failed',
+    });
+  }
 };
 
-export { addToWishlist, getWishlist, removeFromWishlist };
+export const toggleWishlist = async (req, res) => {
+  try {
+    const { productId } = req.body;
+
+    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid productId is required',
+      });
+    }
+
+    const productExists = await Product.exists({ _id: productId });
+
+    if (!productExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+
+    const wishlist = await getOrCreateWishlist(req.user._id);
+
+    const exists = wishlist.products.some(
+      (id) => String(id) === String(productId)
+    );
+
+    if (exists) {
+      wishlist.products = wishlist.products.filter(
+        (id) => String(id) !== String(productId)
+      );
+    } else {
+      wishlist.products.push(productId);
+    }
+
+    await wishlist.save();
+    await populateWishlist(wishlist);
+
+    res.status(200).json({
+      success: true,
+      added: !exists,
+      message: !exists ? 'Added to wishlist' : 'Removed from wishlist',
+      count: wishlist.products.length,
+      productIds: wishlist.products.map((product) => String(product._id)),
+      products: wishlist.products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Wishlist update failed',
+    });
+  }
+};
+
+export const removeWishlistItem = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid productId is required',
+      });
+    }
+
+    const wishlist = await getOrCreateWishlist(req.user._id);
+
+    wishlist.products = wishlist.products.filter(
+      (id) => String(id) !== String(productId)
+    );
+
+    await wishlist.save();
+    await populateWishlist(wishlist);
+
+    res.status(200).json({
+      success: true,
+      message: 'Removed from wishlist',
+      count: wishlist.products.length,
+      productIds: wishlist.products.map((product) => String(product._id)),
+      products: wishlist.products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Wishlist remove failed',
+    });
+  }
+};
+
+export const clearWishlist = async (req, res) => {
+  try {
+    const wishlist = await Wishlist.findOneAndUpdate(
+      { user: req.user._id },
+      { $set: { products: [] } },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Wishlist cleared',
+      count: 0,
+      productIds: [],
+      products: wishlist.products,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Wishlist clear failed',
+    });
+  }
+};

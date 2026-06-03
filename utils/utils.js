@@ -1,55 +1,45 @@
-import bcrypt from 'bcrypt';
+ import bcrypt from 'bcryptjs';
 import fs from 'node:fs';
-import nodemailer from 'nodemailer';
+import transporter from './emailsender.js';
 
-///HashPassword
 export const generateHashPassword = async (password) => {
   const salt = await bcrypt.genSalt(10);
-
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  return hashedPassword;
+  return bcrypt.hash(password, salt);
 };
 
-///verifyHashPassword
 export const verifyPassword = async (currentPassword, storedPassword) => {
-  const isPasswordMatched = await bcrypt.compare(currentPassword, storedPassword);
-  return isPasswordMatched;
+  return bcrypt.compare(currentPassword, storedPassword);
 };
 
-//email verify
 export const verifyEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
-// OTP
 const otpStore = new Map();
 
 export const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit OTP
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
-//email sander
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587, // Use 465 for SSL if secure is true
-  secure: false, // Set to true for SSL
-  auth: {
-    user: 'hushibulhaque520@gmail.com',
-    pass: 'kpjj scuh ubzv negy', // Replace with your generated App Password
-  },
-});
 
 export const sendOTPEmail = async (email, otp) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('Email service is not configured.');
+  }
+
   const mailOptions = {
-    from: 'hushibulhaque520@gmail.com',
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to: email,
     subject: 'Your OTP Code',
     text: `Your OTP code is ${otp}. It is valid for 10 minutes.`,
   };
 
   await transporter.sendMail(mailOptions);
-  otpStore.set(email, { otp, expiresAt: Date.now() + 10 * 60 * 1000 });
+
+  otpStore.set(email, {
+    otp,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  });
 };
 
 export const checkOTP = (email, userProvidedOtp) => {
@@ -60,18 +50,20 @@ export const checkOTP = (email, userProvidedOtp) => {
   }
 
   if (Date.now() > otpEntry.expiresAt) {
-    otpStore.delete(email); // Remove expired OTP
+    otpStore.delete(email);
     return 'OTP expired';
   }
 
   if (String(userProvidedOtp) === String(otpEntry.otp)) {
-    otpStore.delete(email); // Remove OTP after successful verification
+    otpStore.delete(email);
     return 'success';
-  } else {
-    return 'failed';
   }
+
+  return 'failed';
 };
 
 export const removeFile = (filePath) => {
-  fs.unlinkSync(filePath);
+  if (filePath && fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
 };

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const categorySchema = new mongoose.Schema(
+const brandSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -24,40 +24,16 @@ const categorySchema = new mongoose.Schema(
       default: '',
     },
 
-    image: {
+    logo: {
       type: String,
       trim: true,
       default: '',
     },
 
-     iconKey: {
+    website: {
       type: String,
       trim: true,
-      lowercase: true,
-      default: 'shopping-bag',
-      enum: [
-        'shirt',
-        'sparkles',
-        'smartphone',
-        'watch',
-        'headphones',
-        'baby',
-        'shopping-bag',
-        'gift',
-        'monitor',
-        'laptop',
-        'camera',
-        'shoe',
-        'book-open',
-        'home',
-        'gamepad',
-      ],
-    },
-
-    parentCategory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      default: null,
+      default: '',
     },
 
     isActive: {
@@ -92,8 +68,8 @@ const categorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-categorySchema.index({ name: 'text', description: 'text', slug: 'text' });
+brandSchema.index({ name: 'text', description: 'text', slug: 'text' });
 
-const Category = mongoose.model('Category', categorySchema);
+const Brand = mongoose.model('Brand', brandSchema);
 
-export default Category;
+export default Brand;

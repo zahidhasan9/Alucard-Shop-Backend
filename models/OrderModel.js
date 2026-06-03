@@ -1,67 +1,279 @@
 import mongoose from 'mongoose';
 
-// Define the schema for orders
+const trackingSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ['confirmed', 'pending', 'shipped', 'delivered'],
+    default: 'pending',
+  },
+
+  message: {
+    type: String,
+    required: true,
+  },
+
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const orderItemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+    },
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    qty: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+
+    image: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    slug: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    variantId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
+
+    variantLabel: {
+      type: String,
+      trim: true,
+    },
+
+    variantSku: {
+      type: String,
+      trim: true,
+    },
+
+    selectedVariants: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+  },
+  { _id: true }
+);
+
+const couponSchema = new mongoose.Schema(
+  {
+    code: {
+      type: String,
+      uppercase: true,
+      trim: true,
+    },
+
+    type: {
+      type: String,
+      enum: ['percent', 'fixed', 'shipping'],
+    },
+
+    value: {
+      type: Number,
+      default: 0,
+    },
+
+    discountPrice: {
+      type: Number,
+      default: 0,
+    },
+
+    shippingDiscount: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: false }
+);
+
+const manualPaymentSchema = new mongoose.Schema(
+  {
+    provider: {
+      type: String,
+      enum: ['manual', 'bkash', 'nagad', 'rocket'],
+      default: 'manual',
+    },
+
+    senderNumber: {
+      type: String,
+      trim: true,
+    },
+
+    transactionId: {
+      type: String,
+      trim: true,
+    },
+
+    amount: {
+      type: Number,
+      default: 0,
+    },
+
+    submittedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    status: {
+      type: String,
+      enum: ['submitted', 'verified', 'rejected'],
+      default: 'submitted',
+    },
+
+    adminNote: String,
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
-    // Reference to the user who placed the order
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'User',
     },
-    // Array of order items, each containing product details
-    orderItems: [
-      {
-        name: { type: String, required: true },
-        qty: { type: Number, required: true },
-        image: { type: String, required: true },
-        price: { type: Number, required: true },
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          required: true,
-          ref: 'Product',
-        },
-      },
-    ],
-    // Shipping address details
-    shippingAddress: {
-      address: { type: String, required: true },
-      city: { type: String, required: true },
-      postalCode: { type: String, required: true },
-      country: { type: String, required: true },
+
+    orderId: {
+      type: String,
+      required: true,
+      unique: true,
     },
-    // Payment method used for the order
+
+    orderItems: [orderItemSchema],
+
+    shippingAddress: {
+      fullName: String,
+      phone: String,
+      email: String,
+
+      address: {
+        type: String,
+        required: true,
+      },
+
+      city: {
+        type: String,
+        required: true,
+      },
+
+      postalCode: {
+        type: String,
+        required: true,
+      },
+
+      division: {
+        type: String,
+        required: true,
+      },
+    },
+
     paymentMethod: {
-      method: String, // cod / stripe / sslcommerz etc
-      status: String,
+      method: {
+        type: String,
+        enum: ['cod', 'manual', 'online', 'stripe', 'sslcommerz'],
+        default: 'cod',
+      },
+
+      status: {
+        type: String,
+        enum: ['pending', 'submitted', 'paid', 'failed'],
+        default: 'pending',
+      },
+
+      transactionId: String,
       paidAt: Date,
     },
-    // Details of the payment result
+
+    manualPayment: manualPaymentSchema,
+
     paymentResult: {
-      id: { type: String },
-      status: { type: String },
-      update_time: { type: String },
-      email_address: { type: String },
+      id: String,
+      status: String,
+      update_time: String,
+      email_address: String,
     },
-    // Prices and totals
-    itemsPrice: { type: Number, required: true, default: 0.0 },
-    taxPrice: { type: Number, required: true, default: 0.0 },
-    shippingPrice: { type: Number, required: true, default: 0.0 },
-    totalPrice: { type: Number, required: true, default: 0.0 },
-    // Payment and delivery status
-    isPaid: { type: Boolean, required: true, default: false },
-    paidAt: { type: Date },
-    isDelivered: { type: Boolean, required: true, default: false },
-    deliveredAt: { type: Date },
+
+    coupon: couponSchema,
+
+    itemsPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    taxPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    shippingPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    originalShippingPrice: {
+      type: Number,
+      default: 0,
+    },
+
+    discountPrice: {
+      type: Number,
+      default: 0,
+    },
+
+    totalPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    isPaid: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+
+    paidAt: Date,
+
+    Delivery: {
+      type: String,
+      enum: ['confirmed', 'pending', 'shipped', 'delivered'],
+      default: 'pending',
+    },
+
+    deliveredAt: Date,
+
+    tracking: [trackingSchema],
   },
-  {
-    // Include timestamps for createdAt and updatedAt
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Create the Order model
 const Order = mongoose.model('Order', orderSchema);
 
-// Export the Order model
 export default Order;

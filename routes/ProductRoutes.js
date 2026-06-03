@@ -5,25 +5,30 @@ import {
   getProduct,
   deleteProduct,
   updateProduct,
-  createProductReview,
   getTopProducts,
   getProductsByCategory,
+  getFeaturedProducts,
+  getFlashsellProducts,
+  getAdminProducts,
+  getAdminProduct,
+  getRelatedProducts,
 } from '../controllers/ProductController.js';
-import { protect } from '../middlewares/authMiddleware.js';
+import { protect, admin } from '../middlewares/authMiddleware.js';
 import upload from '../middlewares/upload.js';
 
-// protect,authRoute same funcetion
 const router = express.Router();
 
-// router.post('/add', upload.single('image'), protect, createProduct); //for in single image up load
-router.post('/add', upload.array('images', 6), protect, createProduct);
+router.post('/add', protect, admin, upload.array('images', 8), createProduct);
 router.get('/', getProducts);
+router.get('/admin/all', protect, admin, getAdminProducts);
+router.get('/admin/:slug', protect, admin, getAdminProduct);
+router.get('/featured', getFeaturedProducts);
+router.get('/flashsell', getFlashsellProducts);
 router.get('/top', getTopProducts);
-router.get('/:id', getProduct);
-router.delete('/:id', deleteProduct);
 router.get('/category/:slug', getProductsByCategory);
-router.put('/:id', updateProduct);
-// router.put('/:id', authRoute, updateAddress);
-// router.delete('/:id', authRoute, deleteAddress);
+router.get('/:slug/related', getRelatedProducts);
+router.get('/:slug', getProduct);
+router.put('/:slug', protect, admin, upload.array('images', 8), updateProduct);
+router.delete('/:id', protect, admin, deleteProduct);
 
 export default router;

@@ -54,10 +54,19 @@ const getAddressByType = async (req, res) => {
   }
 };
 
-//  Update an address
+
 const updateAddress = async (req, res) => {
   try {
     const { id } = req.params;
+    const { isDefault } = req.body;
+
+    // If default address করা হয়, তাহলে অন্যগুলো false করে দিন
+    if (isDefault === true) {
+      await Address.updateMany(
+        { user: req.userId, _id: { $ne: id } }, // auto casting works
+        { $set: { isDefault: false } }
+      );
+    }
 
     const updated = await Address.findOneAndUpdate({ _id: id, user: req.userId }, req.body, {
       new: true,
