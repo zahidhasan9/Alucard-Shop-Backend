@@ -32,26 +32,6 @@ const makeUniqueSlug = async (Model, name, ignoreId = null) => {
   }
 };
 
-// const buildCategoryPayload = (body) => {
-//   return {
-//     name: body.name?.trim(),
-//     description: body.description?.trim() || '',
-//     image: body.image?.trim() || '',
-//     parentCategory: body.parentCategory || null,
-//     isActive:
-//       typeof body.isActive === 'boolean' ? body.isActive : body.isActive === 'true',
-//     isFeatured:
-//       typeof body.isFeatured === 'boolean'
-//         ? body.isFeatured
-//         : body.isFeatured === 'true',
-//     sortOrder: Number(body.sortOrder || 0),
-//     metaTitle: body.metaTitle?.trim() || '',
-//     metaDescription: body.metaDescription?.trim() || '',
-//   };
-// };
-
-
-
 const buildCategoryPayload = (body) => {
   return {
     name: body.name?.trim(),
